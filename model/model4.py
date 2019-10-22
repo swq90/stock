@@ -1,12 +1,14 @@
 # p=12,0<up<=2,sort by up_range,end_date close<limit_up
 import datetime
+import time
 
 import pandas as pd
 import tushare as ts
 
 pro = ts.pro_api()
 
-def f4(start_date,end_date,period,up_times):
+
+def f4(start_date,end_date,period,up_times,range_low,*range_up,recent,c_up):
     # df 为period中有涨停的股票
     df = pd.DataFrame()
 
@@ -32,10 +34,12 @@ def f4(start_date,end_date,period,up_times):
         # print(daily.shape)
         df = pd.concat([daily,df],axis=0)
         # print(df.shape)
+
     df =df.groupby("ts_code").size().sort_values(ascending=False).reset_index()
+    print(df.shape,df.head())
     df.columns = list(('ts_code', 'times'))
     df = df[(df["times"]>0) & (df["times"]<=up_times)]
-    print("df-up<=times",df.shape)
+    print("df-up<=times",df.shape,df.head())
     df = df[df["ts_code"].isin(stock_name["ts_code"])]
     print("df-st", df.shape)
 
@@ -58,15 +62,59 @@ def f4(start_date,end_date,period,up_times):
     df = df.merge(df_start,on="ts_code")
 
     df = df.eval("pct=end_close/close-1",inplace=False)
-    df = df.sort_values(["pct"], ascending=False)
+    df = df[df["pct"]>=range_low]
+
     df["pct"] = df["pct"].map(lambda x: ('%.2f') % x)
 
     df = df.reset_index(drop=True)
     df.drop(["end_close","close"],axis=1,inplace=True)
-    df.to_csv(start_date+"~"+end_date+"Nup"+"~p"+str(period)+"up"+str(up_times)+".csv")
+
+    date = start_date
+    days = recent
+    while 1:
+        r = pro.query('trade_cal', start_date=date, end_date=end_date, is_open="1").shape[0]
+        if r > recent:
+            days -= 1
+        elif r < recent:
+            days += 1
+        else:
+            break
+        date = datetime.datetime.today() - datetime.timedelta(days=days)
+        date = date.strftime('%Y%m%d')
+    stocks=[]
+    i = 0
+    for stock in df['ts_code']:
+        pct_up = pro.daily(ts_code=stock, start_date=date, end_date=end_date)
+        pct_up = pct_up.eval('avg=amount/vol', inplace=False)
+        pct_up = pct_up[["ts_code", "trade_date", "avg"]]
+        pct_up = pct_up.sort_values(["trade_date"], ascending=False)
+
+        ts = pct_up["avg"]
+        ts.name = "pre_avg"
+        ts = ts.drop([0]).reset_index()
+        ts = ts.drop(["index"], axis=1)
+        pct_up = pd.concat([pct_up, ts], axis=1)
+
+        t = pct_up[pct_up["avg"] - pct_up["pre_avg"] > 0]["ts_code"].count()
+
+        if t >= c_up:
+            stocks.append([stock,t])
+        i += 1
+        if not i % 180:
+            print("has run", i, 'round')
+
+            time.sleep(60)
+    stock_avg_up = pd.DataFrame(stocks,columns=["ts_code","pct_up"])
+
+    df = df.merge(stock_avg_up,on="ts_code")
+    df = df.sort_values(["pct"], ascending=False)
     print(df)
 
 
 
 
-f4(start_date="20190930",end_date="20191022",period=12,up_times=2)
+    df.to_csv(start_date+"~"+end_date+"Nup"+"~p"+str(period)+"up"+str(up_times)+"recent"+str(recent)+"c_up"+str(c_up)+".csv")
+
+# f4(start_date="20190930",end_date="20191022",period=12,up_times=2)
+# 上面条件下，end_date_range>0.05,recent=5满足至少2天均价上涨
+f4(start_date="20190930",end_date="20191022",period=12,NUD=4,up_times=2,range_low=0.05,recent=5,c_up=2)
