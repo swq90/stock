@@ -40,28 +40,63 @@ def get_date(start_date="",end_date="",period="",cal=0):
         return pro.trade_cal(start_date=start_date,end_date=end_date,is_open=1).shape[0]
 
 
-def get_avg_up(ts_code,start_date,end_date,avg_up_times):
+def get_avg_up(ts_code,start_date="",end_date="",period=1,avg_up_times=0,up_range=[]):
     # 以后加上日期判定,然后把调用时的recent+1还原
+    res =[]
+    if start_date or end_date:
+        pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
+            ["ts_code", "trade_date", "amount", "vol"]]
+        # print(pct)
+        if pct.empty:
+            return
+        if avg_up_times:
+            pct_up_times = pct.eval('avg=amount/vol', inplace=False)
+            pct_up_times = pct_up_times[["ts_code", "trade_date", "avg"]]
+            # pct_up_times = pct_up_times.sort_values(["trade_date"], ascending=False)
 
-    pct_up = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[["ts_code","trade_date","amount","vol"]]
-    if pct_up.empty:
-        return
-    # print(pct_up)
-    pct_up = pct_up.eval('avg=amount/vol', inplace=False)
-    pct_up = pct_up[["ts_code", "trade_date", "avg"]]
-    pct_up = pct_up.sort_values(["trade_date"], ascending=False)
+            ts = pct_up_times["avg"]
+            ts.name = "pre_avg"
+            ts = ts.drop([0]).reset_index(drop=True)
+            # ts = ts.drop(["index"], axis=1)
+            pct_up_times = pd.concat([pct_up_times, ts], axis=1)
+            t = pct_up_times[pct_up_times["avg"] - pct_up_times["pre_avg"] > 0]["ts_code"].count()
+            # print(pct_up_times)
+            if t >= avg_up_times:
+                if not res:
+                # print("avg",[ts_code, t])
+                    res.append(ts_code)
+                res.append(t)
+            else:return
 
-    ts = pct_up["avg"]
-    ts.name = "pre_avg"
-    ts = ts.drop([0]).reset_index(drop=True)
-    # ts = ts.drop(["index"], axis=1)
-    pct_up = pd.concat([pct_up, ts], axis=1)
-    t = pct_up[pct_up["avg"] - pct_up["pre_avg"] > 0]["ts_code"].count()
+        if up_range:
+            # start_date, end_date = get_date(period=period)
+            # pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
+            #     ["ts_code", "trade_date", "amount", "vol"]]
+            # if pct.empty:
+            #     return
+            # print(pct)
+            pct.drop(pct.tail(1).index,inplace=True)
+            # print(pct)
+            t_amout = pct["amount"].sum()
+            t_vol = pct["vol"].sum()
+            t = pct[pct["trade_date"]==end_date]
 
-    if t >= avg_up_times:
-        # print("avg",[ts_code, t])
-        return [ts_code, t]
-    return
+            pct_range=t['amount']/t["vol"]/(t_amout/t_vol)
+            pct_range =pct_range[0]-1
+            # print(up_range[0],up_range[1])
+            if (pct_range>=up_range[0]) & (pct_range <= up_range[1]):
+                if not res:
+                    res.append(ts_code)
+                res.append(pct_range)
+            else: return
+        # print(res)
+        # if avg_up_pct:
+        #     start_date, end_date = get_date(period=period)
+        #     pct_end= pct[pct["trade_date"]==end_date]
+        #     pct_start=pct[pct["trade_date"]==start_date]
+        #     pct_end[]
+
+    return res
 
 # 返回df形式的涨停股票
 def get_limit_up(trade_date=""):
@@ -73,12 +108,10 @@ def get_limit_up(trade_date=""):
     # print(daily.shape)
     return daily
 
-def get_pct_up(type=5,start_date="",end_date="",period=10,pct=0.01):
-
-    pass
 
 
-def f4(start_date="",end_date="",period=5,nud=1,*range_up,recent,avg_up_times,up_times,range_low):
+
+def f4(start_date="",end_date="",period=5,nud=1,range=[],*recent,avg_up_times,up_times,range_low):
     start_date,end_date=get_date(period=period)
     file_name=end_date+str(period)+"range"+str(range_low)+"nud"+str(nud)+"r"+str(recent)+"cup"+str(avg_up_times)
 
@@ -87,6 +120,7 @@ def f4(start_date="",end_date="",period=5,nud=1,*range_up,recent,avg_up_times,up
     # 名字中不包含st的股票
     stock_name = pro.stock_basic()
     stock_name = stock_name[stock_name["name"].str.contains("ST") == False]
+    # print(stock_name["market"].unique())
     # period-nud中所有存在涨停的股票
 
     date_list_y = get_date(start_date=start_date,cal=period-nud)
@@ -165,42 +199,68 @@ def f4(start_date="",end_date="",period=5,nud=1,*range_up,recent,avg_up_times,up
     df.to_csv(file_name+".csv")
 
 
-def f5(period ,avg_up_times,mv=0):
-    rs, re = get_date(period=period + 1)
-    print(rs,re)
-    # mv= [cir_mv_low，cir_mv_low，total_mv_low,total_mv_up]
+def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_rate=None,up_range=[]):
+    rs, re = get_date(period=period)
 
+    # df_start = pro.daily(trade_date=rs)[["ts_code", "close"]]
+    df_end = pro.daily_basic(trade_date=re)
+    # df_start.columns = list(('ts_code', "start_close"))
+    # df_end = df_end.merge(df_start, on="ts_code")
+    # df_end = df_end.eval("pct=close/start_close-1", inplace=False)
+    # df_end =df_end[(df_end["pct"]>=up_range[0])&(df_end["pct"]<=up_range[1])]
+    # print(df_end.shape)
     stocks =[]
 
-    stock_list = pro.daily(trade_date=re)
-    print(stock_list.shape)
     stock_name = pro.stock_basic()
     stock_name = stock_name[stock_name["name"].str.contains("ST") == False]
-    print(stock_name.shape)
-    stock_list = stock_list[stock_list["ts_code"].isin(stock_name["ts_code"])]
-    print(stock_list.shape)
+    # print(stock_name.shape)
+    stock_name = stock_name[stock_name["market"].str.contains("科创板") == False]
+    # print(stock_name.shape)
 
-    if mv:
-        stock_mv = pro.daily_basic(trade_date=re, fields='ts_code,total_mv,circ_mv')
-        stock_mv = stock_mv[(stock_mv["total_mv"] <= mv/10000)]
-        stock_list = stock_list[stock_list["ts_code"].isin(stock_mv["ts_code"])]
+
+    # print(stock_name["market"].unique())
+    # 过滤名字
+    stock_list = df_end[df_end["ts_code"].isin(stock_name["ts_code"])]
     print(stock_list.shape)
+    # print(list(stock_list))
+    # print(turnover_rate,mv,avg_up_pct)
+    if turnover_rate:
+        stock_list = stock_list[stock_list["turnover_rate"]>=turnover_rate]
+        print("turnover_rate",stock_list.shape)
+        # print(list(stock_list))
+
+    if total_mv:
+
+        stock_list = stock_list[stock_list["total_mv"]<(total_mv/10000)]
+        print("mv",stock_list.shape)
+
     i = 0
+    ts,te = get_date(period=period+1)
+    print(ts,te)
     for stock in stock_list["ts_code"]:
         # print(stock)
-        data = get_avg_up(ts_code=stock,start_date=rs,end_date=re,avg_up_times=avg_up_times)
+        data = get_avg_up(ts_code=stock,start_date=ts,end_date=te,period=period,avg_up_times=avg_up_times,up_range=up_range)
         # print("f5",data)
         if data:
+            # print(data)
             stocks.append(data)
 
         i += 1
         if not i % 180:
             print("has run", i, 'round',len(stocks))
+            # break
             time.sleep(60)
-    stocks = pd.DataFrame(stocks,columns=["ts_code","avg_up_times"])
+    if up_range:
+        stocks = pd.DataFrame(stocks,columns=["ts_code","avg_up_times","up_range"])
+    else:
+        stocks = pd.DataFrame(stocks,columns=["ts_code","avg_up_times"])
+
     print(stocks.shape)
     stocks.sort_values(["avg_up_times"], ascending=False).reset_index(drop=True)
-    stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+".csv")
+    stocks.to_csv(te+"period"+str(period)+"mv30"+"range"+str(up_range)+".txt",sep='\t')
+    # stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+"avg_up_pct"+str(avg_up_pct)+".csv")
+
+
 
     # stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+"mv"+str(mv/100000000)+"b"+".csv")
 # p=12,0<up<=2,sort by up_range,end_date close<limit_up
@@ -209,10 +269,10 @@ def f5(period ,avg_up_times,mv=0):
 # f4(period=12,nud=3,up_times=2,range_low=0.05,recent=5,avg_up_times=2)
 
 # 12天内上涨次数>=9
-f5(period =12,avg_up_times=9)
+#
 
-# 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%,最后一天换手率大于2%
-# f5(period=10,avg_up_times=6,mv=3000000000)
+# 10天内满足7次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%,最后一天换手率大于2%
+# t=f5(period=10,avg_up_times=6,mv=3000000000,turnover_rate=0.02,avg_up_pct=0.01)
 
 
 # x,y = get_date(start_date="20191001",period=7)
@@ -221,3 +281,18 @@ f5(period =12,avg_up_times=9)
 
 # data = pro.daily(ts_code='000029.SZ',start_date="20191001")
 # print(data)
+# t = get_avg_up(period=5,ts_code="002045.SZ",avg_up_pct=0.01,avg_up_times=1)
+
+
+
+#换手率大于1%,股票开头不是688【科创版】,不是st，最后一天换手率大于1%
+# 12天内，最近2天没涨停，limit_up in (1,2,3),最后一天涨幅大于5%，小于第一天30%
+# f4(period=12,nud=2,up_times=3,range=[0.05,0.3],recent=5,avg_up_times=2)
+
+# 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于1日均价的1%且小于5%,换手率1.5%
+t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=0.015,up_range=[0.01,0.05])
+# 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于5%
+
+# 12天内上涨次数>=9
+# t= f5(period =12,avg_up_times=9)
+print(t)
