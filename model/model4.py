@@ -193,6 +193,7 @@ def f4(start_date="",end_date="",period=5,nud=1,range=[],recent=0,avg_up_times=0
 
         df = df.merge(stock_avg_up,on="ts_code")
     df = df.sort_values(["pct"], ascending=False)
+    return df
     print(df)
 
 
@@ -260,8 +261,8 @@ def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_
     print(stocks.shape)
     stocks.sort_values(["avg_up_times"], ascending=False).reset_index(drop=True)
     # stocks.to_csv(te+"period"+str(avg_up_times)+str(period)+"mv30"+"range"+str(up_range)+".txt",sep='\t')
-    stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+".txt",sep='\t')
-
+    # stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+".txt",sep='\t')
+    return stocks
 
 
     # stocks.to_csv("period"+str(period)+"avg_up_times"+str(avg_up_times)+"mv"+str(mv/100000000)+"b"+".csv")
@@ -285,13 +286,19 @@ def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_
 
 
 
+
+
+today= datetime.datetime.today().date()
+today = str(today)[0:10]
+
 #换手率大于1%,股票开头不是688【科创版】,不是st，最后一天换手率大于1%
 # 12天内，最近2天没涨停，limit_up in (1,2,3),最后一天涨幅大于5%，小于第一天30%
-# t = f4(period=12,nud=2,up_times=3,range=[0.05,0.3])
-
+t = f4(period=12,nud=2,up_times=3,range=[0.05,0.3])
+t.to_csv(today+"limitUp1-3.txt",sep='\t')
 # 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于5%,换手率1.5%
-# t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
-
+t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
+t.to_csv(today+"10dayUp1-15%.txt",sep='\t')
 # 12天内上涨次数>=9
 t= f5(period =12,avg_up_times=9)
+t.to_csv(today+"up9-12.txt",sep='\t')
 print(t)

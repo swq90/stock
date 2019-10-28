@@ -15,7 +15,7 @@ class StockFilter:
     # 默认过滤掉传入关键字，如果要
 
     def stock_basic(self, contain=False, **basic):
-        # print(kwargs)
+
         # basic = {'name':'股票名',
         #          'area': '所在地域',
         #          'industry': '所属行业',
