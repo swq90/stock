@@ -3,7 +3,7 @@
 import datetime
 import pandas as pd
 import tushare as ts
-import model.stockfilter as sf
+# import model.stockfilter as sf
 
 
 # avg_n : n日均价
@@ -61,7 +61,7 @@ def get_date(start_date="", end_date="", period=0, cal=0):
 # up_times=[上涨次数的下限，上限，周期（3代表period的前三天，-3代表后三天，空代表整个period]
 # pct_chg=
 
-def limit_up_info(start_date="",end_date="",period=1,*,up_limit_times=[]):
+def up_limit_info(start_date="",end_date="",period=1,*,up_limit_times=[]):
 
 
     dailys = pd.DataFrame()
@@ -74,21 +74,21 @@ def limit_up_info(start_date="",end_date="",period=1,*,up_limit_times=[]):
         limit = pro.stk_limit(trade_date=date)
         dailys = pd.concat([daily,dailys],axis=0)
         limits = pd.concat([limit,limits],axis=0)
-        print(dailys.shape)
-        print(limits.shape)
+        # print(dailys.shape)
+        # print(limits.shape)
     limit_list = pd.merge(dailys,limits,on=["ts_code","trade_date"])[["ts_code","trade_date","close","up_limit"]]
-    limit_list = limit_list.eval("up_chg=close-up_limit")
-    print(limit_list.shape)
-    limit_list = limit_list[limit_list["up_chg"]>=0]
+    limit_list = limit_list[limit_list["close"]==limit_list["up_limit"]]
     limit_list = limit_list.groupby("ts_code").size().sort_values(ascending=False).reset_index()
+
     limit_list.columns=["ts_code","up_limit_times"]
     limit_list = limit_list[(limit_list["up_limit_times"]>=up_limit_times[0]) &(limit_list["up_limit_times"]<=up_limit_times[1])]
 
-    print(limit_list)
-
-    print(limit_list.shape)
-
     return limit_list
+
+
+
+def avg_up_info(start_date="",end_date="",period=1,*,avg_up_times=0,up_range=[]):
+
 
 
 
@@ -159,7 +159,7 @@ def get_avg_up(ts_code,start_date="",end_date="",period=1,avg_up_times=0,up_rang
 # print(list(s))
 #
 
-t = limit_up_info(period=3,up_limit_times=[2,float('inf')])
+t = up_limit_info(period=3,up_limit_times=[2,float('inf')])
 print(t)
 
 

@@ -121,7 +121,7 @@ def f4(start_date="",end_date="",period=5,nud=1,range=[],recent=0,avg_up_times=0
     stock_name = pro.stock_basic()
     stock_name = stock_name[stock_name["name"].str.contains("ST") == False]
     stock_name = stock_name[stock_name["market"].str.contains("科创板") == False]
-    print(stock_name.shape)
+    # print(stock_name.shape)
 
     # print(stock_name["market"].unique())
     # 前period-nud中所有存在涨停的股票
@@ -129,10 +129,10 @@ def f4(start_date="",end_date="",period=5,nud=1,range=[],recent=0,avg_up_times=0
     for trade_date in date_list_y:
         daily_up=get_limit_up(trade_date=trade_date)
         df = pd.concat([daily_up,df],axis=0)
-        print(df.shape)
+        # print(df.shape)
 
     df = df.groupby("ts_code").size().sort_values(ascending=False).reset_index()
-    print(df.shape)
+    # print(df.shape)
     df.columns = list(('ts_code', 'times'))
     # 满足涨停次数股票
     df = df[(df["times"]>0) & (df["times"]<=up_times)]
@@ -292,10 +292,10 @@ today= datetime.datetime.today().date()
 today = str(today)[0:10]
 
 #换手率大于1%,股票开头不是688【科创版】,不是st，最后一天换手率大于1%
-# 12天内，最近2天没涨停，limit_up in (1,2,3),最后一天涨幅大于5%，小于第一天30%
+# 12天内，最近 2天没涨停，limit_up in (1,2,3),最后一天涨幅大于5%，小于第一天30%
 t = f4(period=12,nud=2,up_times=3,range=[0.05,0.3])
 t.to_csv(today+"limitUp1-3.txt",sep='\t')
-# 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于5%,换手率1.5%
+# # 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于5%,换手率1.5%
 t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
 t.to_csv(today+"10dayUp1-15%.txt",sep='\t')
 # 12天内上涨次数>=9

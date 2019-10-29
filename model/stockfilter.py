@@ -30,7 +30,7 @@ class StockFilter:
         stock_basic = pro.stock_basic()
         print(stock_basic.shape)
 
-        daily_basic = pro.daily_basic(trade_date="20191025")
+        daily_basic = pro.daily_basic(trade_date="20191028")
         print(daily_basic.shape)
 
         for key, value in basic.items():
@@ -74,3 +74,6 @@ class StockFilter:
 
 
 
+o = StockFilter()
+t = o.stock_basic(total_mv=300000,turnover_rate=1.5,name="st|ST")
+print(t)
