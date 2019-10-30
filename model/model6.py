@@ -88,7 +88,7 @@ def up_limit_info(start_date="",end_date="",period=1,*,up_limit_times=[]):
 
 
 def avg_up_info(start_date="",end_date="",period=1,*,avg_up_times=0,up_range=[]):
-
+    pass
 
 
 
@@ -159,7 +159,7 @@ def get_avg_up(ts_code,start_date="",end_date="",period=1,avg_up_times=0,up_rang
 # print(list(s))
 #
 
-t = up_limit_info(period=3,up_limit_times=[2,float('inf')])
-print(t)
+# t = up_limit_info(period=3,up_limit_times=[2,float('inf')])
+# print(t)
 
 
