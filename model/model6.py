@@ -86,9 +86,89 @@ def up_limit_info(start_date="",end_date="",period=1,*,up_limit_times=[]):
     return limit_list
 
 
+# stable=[x1:当前日期x1天找到最大值对应y日,x2:y日后x2天至当日,x3：前面时段内每日均价占时段内总均价浮动范围,x4:y日前x4天],
+def avg_up_info(start_date="",end_date="",period=1,*,stable=[],avg_chg=0,avg_up_times=0,up_range=[]):
+    res = pd.DataFrame()
+    date_list=get_date(start_date=start_date,end_date=end_date,cal=period)
+    date_list.append("")
+    date_pre=get_date(start_date=start_date,end_date=end_date,cal=period+1)
+    print(date_list)
+    print(date_pre)
+    date=pd.DataFrame({"pre_date":date_pre,"trade_date":date_list})
+    print(date)
+    daily=pd.DataFrame()
+    for i in date_pre:
+        daily = pd.concat([pro.daily(trade_date=i),daily])
 
-def avg_up_info(start_date="",end_date="",period=1,*,avg_up_times=0,up_range=[]):
-    pass
+    daily=daily.eval("avg=amount/vol")
+
+    pre_daily=daily[["ts_code","trade_date","avg"]]
+    pre_daily.columns=["ts_code","pre_date","pre_avg"]
+    print(pre_daily)
+    # print(daily)
+    daily=daily.merge(date,on="trade_date")
+    daily= daily.merge(pre_daily,left_on=["ts_code","pre_date"],right_on=["ts_code","pre_date"])
+    # daily=daily[["t"]]
+    # daily.sort_values("ts_code")
+    # print(daily[daily["ts_code"]=="000555.SZ"])
+    daily = daily.eval("avg_chg=avg-pre_avg")
+    daily=daily[['ts_code', 'trade_date', 'vol', 'amount', 'avg', 'pre_avg', 'avg_chg']]
+    # 满足均价上涨次数
+    if avg_up_times:
+        df=daily[daily["avg_chg"]>avg_chg].groupby(by="ts_code").size().sort_values(ascending=False).reset_index()
+        print(df)
+        df.columns = list(('ts_code', 'avg_up_times'))
+        if type(avg_up_times)==int:
+
+            df = df[(df["avg_up_times"] >= avg_up_times)]
+        elif type(avg_up_times)==list:
+            df = df[(df["avg_up_times"] >= avg_up_times[0])&(df["avg_up_times"] <= avg_up_times[1])]
+
+        if res.empty:
+            res=df
+        else:
+            res= res.merge(df,on="ts_code")
+
+    print(list(daily))
+    # daily_up = daily
+    # 如果找某段日期最大值
+    if stable:
+        df = pd.DataFrame()
+        up_days = date_list[:stable[0]]
+        daily_up=daily[daily["trade_date"].isin(up_days)]
+
+        daily_up=daily_up[["ts_code", "avg"]]
+        daily_up=daily_up.groupby(by="ts_code",as_index=False).max()
+
+        daily_up=daily_up.merge(daily[["ts_code","trade_date","avg"]],on=["ts_code","avg"])
+        daily_up.sort_values(["trade_date"], ascending=False,inplace=True)
+        for i in up_days:
+            code=daily_up[daily_up["trade_date"]==i]["ts_code"]
+            df = pd.concat([daily[(daily["ts_code"].isin(code))&(daily["trade_date"].isin(date_list[date_list.index(i)+stable[1]:]))],df])
+        print(df["ts_code"].unique().shape)
+        df_date=df.groupby("ts_code")["trade_date"].count().reset_index()
+        print(df_date.shape)
+
+        df_all_avg=df[['ts_code', 'vol', 'amount']].groupby("ts_code")["vol","amount"].sum().reset_index()
+        df_all_avg.eval("all_avg=amount/vol",inplace=True)
+        df_all_avg = df_all_avg[['ts_code',"all_avg"]]
+        df = df.merge(df_all_avg,on="ts_code")
+        # print(df)
+        df.eval("pct_avg=avg/all_avg",inplace=True)
+        df = df[(df["pct_avg"]<=1+stable[2])&(df["pct_avg"]>=1-stable[2])]
+        df_dates=df.groupby("ts_code")["trade_date"].size().reset_index()
+        print(df_dates.shape)
+        df_date= df_date.merge(df_dates,on=["ts_code","trade_date"])
+        print(df_date.shape)
+
+
+        # print(df)
+
+
+
+
+
+
 
 
 
@@ -161,5 +241,8 @@ def get_avg_up(ts_code,start_date="",end_date="",period=1,avg_up_times=0,up_rang
 
 # t = up_limit_info(period=3,up_limit_times=[2,float('inf')])
 # print(t)
+
+t =avg_up_info(period=10,stable=[-3,2,0.03])
+print(t)
 
 
