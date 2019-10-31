@@ -5,8 +5,6 @@ import datetime
 import pandas as pd
 import tushare as ts
 
-# import model.stockfilter as sf
-
 
 # avg_n : n日均价
 # up_n : n 日上涨
@@ -14,7 +12,8 @@ import tushare as ts
 
 pro = ts.pro_api()
 
-
+# 提供period，返回period的开始和结束日期(默认结束日期是最近一个交易日
+# 提供cal，则返回cal天的交易日日历，
 def get_date(start_date="", end_date="", period=0, cal=0):
     today = datetime.datetime.today().date()
     today = str(today)[0:10]
@@ -120,15 +119,23 @@ def up_limit_info(start_date="", end_date="", period=1, *, up_limit_times=[]):
     return limit_list
 
 
+# 均价
+    # avg_up_times 均价上涨次数
+    # avg_chg_pct 均价上涨幅度,avg/pre_avg-1
+# 横盘
+
+
+
+
 # stable1=[x0:当前日期x0天找到最大值对应y日,x1:y日后x1天至当日,x2：前面时段内每日均价占时段内总均价浮动范围],
-def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times=0, stable1=[], stable2=[], end_close=0,
+def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_times=0, stable1=[], stable2=[], end_close=0,
                 up_range=[], end_avg_close=0):
     res = pd.DataFrame()
     date_list = get_date(start_date=start_date, end_date=end_date, cal=period)
     date_list.append("")
     date_pre = get_date(start_date=start_date, end_date=end_date, cal=period + 1)
     # print(date_list)
-    print(date_pre)
+    # print(date_pre)
     date = pd.DataFrame({"pre_date": date_pre, "trade_date": date_list})
     date.drop(date.tail(1).index, inplace=True)
 
@@ -149,12 +156,12 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
     daily = daily.merge(pre_daily, left_on=["ts_code", "pre_date"], right_on=["ts_code", "pre_date"])
     # daily=daily[["t"]]
     # daily.sort_values("ts_code")
-    print(daily[daily["ts_code"] == "300433.SZ"])
-    daily = daily.eval("avg_chg=avg-pre_avg")
-    daily = daily[['ts_code', 'trade_date', "high", "low", "close", 'vol', 'amount', 'avg', 'pre_avg', 'avg_chg']]
+    # print(daily[daily["ts_code"]=="000555.SZ"])
+    daily = daily.eval("avg_chg_pct=(avg-pre_avg)/pre_avg")
+    daily = daily[['ts_code', 'trade_date', "high", "low", "close", 'vol', 'amount', 'avg', 'pre_avg', 'avg_chg_pct']]
     # 满足均价上涨次数
     if avg_up_times:
-        df = daily[daily["avg_chg"] > avg_chg].groupby(by="ts_code").size().sort_values(ascending=False).reset_index()
+        df = daily[daily["avg_chg_pct"] > avg_chg_pct].groupby(by="ts_code").size().sort_values(ascending=False).reset_index()
         # print(df)
         df.columns = list(('ts_code', 'avg_up_times'))
         if type(avg_up_times) == int:
@@ -190,7 +197,7 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
 
         # 可能会有多天出现相同的high
         daily_max = daily_max.merge(daily[["ts_code", "trade_date", "high", "avg"]], on=["ts_code", "high"])
-        print("fdsf", daily_max[daily_max["ts_code"] == "300433.SZ"])
+        # print("fdsf",daily_max[daily_max["ts_code"]=="002705.SZ"])
 
         # 前段时间每支股票最大值出现对应的日期
         daily_max.sort_values(["trade_date"], ascending=False, inplace=True)
@@ -203,7 +210,7 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
 
         # print(list(df))
         df_date = df.groupby("ts_code")["trade_date"].count().reset_index()
-        print("tianshu", df_date[df_date["ts_code"] == "300433.SZ"])
+        # print("tianshu",df_date[df_date["ts_code"]=="002705.SZ"])
 
         # print(df_date.shape)
         # 最大值日+2到当体整体均价浮动
@@ -213,17 +220,17 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
         df = df.merge(df_all_avg, on="ts_code")
         # print(df["trade_date"].unique())
         # print(df)
-        print("214", df[df["ts_code"] == "300433.SZ"])
+        # print("214",df[df["ts_code"]=="002705.SZ"])
 
         if end_close:
             df.eval("close_avg=close/10/all_avg", inplace=True)
             df_close = df[df["trade_date"] == end_date]
             # print(df_close)
             df_close = df_close[df_close["close_avg"] >= end_close]
-            print("end_close", df_close[df_close["ts_code"] == "300433.SZ"])
+            # print("end_close",df_close[df_close["ts_code"] == "002705.SZ"])
             # print(df)
             df = df[df["ts_code"].isin(df_close["ts_code"])]
-            print("fdsf", df[df["ts_code"] == "300433.SZ"])
+            # print("fdsf", df[df["ts_code"] == "002705.SZ"])
             #
             print("满足close的df")
             # print(list(df_close))
@@ -235,10 +242,10 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
             # print(df_close)
             daily_max = daily_max.merge(df_close, on="ts_code")
             daily_max.eval("close_of_avg=close_avg/avg", inplace=True)
-            print("238", daily_max[daily_max["ts_code"] == "300433.SZ"])
+            # print("238", daily_max[daily_max["ts_code"] == "002705.SZ"])
 
             daily_max = daily_max[daily_max["close_of_avg"] <= end_avg_close]
-            print("238", daily_max[daily_max["ts_code"] == "300433.SZ"])
+            # print("238", daily_max[daily_max["ts_code"] == "002705.SZ"])
 
             # print("close", df)
             # print("max",daily_max)
@@ -246,8 +253,8 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
         df = df[(df["pct_avg"] <= 1 + stable1[2]) & (df["pct_avg"] >= 1 - stable1[2])]
         df_dates = df.groupby("ts_code")["trade_date"].size().reset_index()
 
-        print("天数", df_dates[df_dates["ts_code"] == "300433.SZ"])
-        print("fdsf", df[df["ts_code"] == "300433.SZ"][["ts_code", "trade_date", "avg", "pct_avg", "all_avg"]])
+        # print("天数",df_dates[df_dates["ts_code"]=="002705.SZ"])
+        # print("fdsf",df[df["ts_code"]=="002705.SZ"][["ts_code","trade_date","avg","pct_avg","all_avg"]])
 
         # 满足最大值后两日至当日之间浮动在stable[2]范围内的股票
         df_date = df_date.merge(df_dates, on=["ts_code", "trade_date"])
@@ -255,14 +262,13 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
 
         daily_max = daily_max[daily_max["ts_code"].isin(df_date["ts_code"])]
 
-        print("fdsf", daily_max[daily_max["ts_code"] == "300433.SZ"])
+        # print("fdsf",daily_max[daily_max["ts_code"]=="002705.SZ"])
 
         # print("1", daily_max.shape, daily_max["ts_code"].unique().shape)
         if stable2:
             date_pre2 = get_date(start_date=start_date, end_date=end_date, cal=period + max(stable2[:2]))
             # print(date_pre2)
             date_pre = list(set(date_pre) ^ set(date_pre2))
-            print(date_pre)
             # print(date_pre)
             for i in date_pre:
                 daily_info = pd.concat([pro.daily(trade_date=i), daily_info])
@@ -283,33 +289,85 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
             daily_min = daily_min[["ts_code", "low", "high"]]
             daily_min.columns = ["ts_code", "low", "pre_high"]
             daily_min_high = daily_min[["ts_code", "pre_high"]].groupby(by="ts_code", as_index=False).max()
-            print(daily_min_high[daily_min_high["ts_code"] == "300433.SZ"])
 
             daily_min_low = daily_min[["ts_code", "low"]].groupby(by="ts_code", as_index=False).min()
-            print("sf", daily_min[daily_min["ts_code"] == "300433.SZ"])
+            # print("sf", daily_min[daily_min["ts_code"] == "002705.SZ"])
             daily_min = pd.merge(daily_min_high, daily_min_low, on="ts_code")
-            print(daily_min[daily_min["ts_code"] == "300433.SZ"])
-            print('max', daily_max[daily_max["ts_code"] == "300433.SZ"])
 
             # daily_min.columns=["ts_code","low"]
             # print(daily_min.shape)
             daily_min = daily_min.merge(daily_max, on="ts_code")
-            print('max', daily_max[daily_max["ts_code"] == "300433.SZ"])
-
-            daily_min = daily_min[daily_min["pre_high"] < daily_min["high"]]
-            pd.set_option('display.max_columns', None)
-
-            print(daily_min[daily_min["ts_code"] == "300433.SZ"])
-
+            daily_min_ = daily_min[daily_min["pre_high"] < daily_min["high"]]
             # print("2", daily_min)
             daily_min.eval("max_chg=high/low", inplace=True)
-            print("sf", daily_min[daily_min["ts_code"] == "300433.SZ"])
+            # print("sf", daily_min[daily_min["ts_code"] == "002705.SZ"])
 
             daily_min = daily_min[daily_min["max_chg"] >= stable2[2]]
-            print("sf", daily_min[daily_min["ts_code"] == "300433.SZ"])
+            # print("sf", daily_min[daily_min["ts_code"] == "002705.SZ"])
 
             # print(daily_min)
             return daily_min
+
+
+def get_avg_up(ts_code, start_date="", end_date="", period=1, avg_up_times=0, up_range=[]):
+    # 以后加上日期判定,然后把调用时的recent+1还原
+    res = []
+    if start_date or end_date:
+        pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
+            ["ts_code", "trade_date", "amount", "vol"]]
+        # print(pct)
+        if pct.empty:
+            return
+        if avg_up_times:
+            pct_up_times = pct.eval('avg=amount/vol', inplace=False)
+            pct_up_times = pct_up_times[["ts_code", "trade_date", "avg"]]
+            # pct_up_times = pct_up_times.sort_values(["trade_date"], ascending=False)
+
+            ts = pct_up_times["avg"]
+            ts.name = "pre_avg"
+            ts = ts.drop([0]).reset_index(drop=True)
+            # ts = ts.drop(["index"], axis=1)
+            pct_up_times = pd.concat([pct_up_times, ts], axis=1)
+            t = pct_up_times[pct_up_times["avg"] - pct_up_times["pre_avg"] > 0]["ts_code"].count()
+            # print(pct_up_times)
+            if t >= avg_up_times:
+                if not res:
+                    # print("avg",[ts_code, t])
+                    res.append(ts_code)
+                res.append(t)
+            else:
+                return
+
+        if up_range:
+            # start_date, end_date = get_date(period=period)
+            # pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
+            #     ["ts_code", "trade_date", "amount", "vol"]]
+            # if pct.empty:
+            #     return
+            # print(pct)
+            pct.drop(pct.tail(1).index, inplace=True)
+            # print(pct)
+            t_amout = pct["amount"].sum()
+            t_vol = pct["vol"].sum()
+            t = pct[pct["trade_date"] == end_date]
+
+            pct_range = t['amount'] / t["vol"] / (t_amout / t_vol)
+            pct_range = pct_range[0] - 1
+            # print(up_range[0],up_range[1])
+            if (pct_range >= up_range[0]) & (pct_range <= up_range[1]):
+                if not res:
+                    res.append(ts_code)
+                res.append(pct_range)
+            else:
+                return
+        # print(res)
+        # if avg_up_pct:
+        #     start_date, end_date = get_date(period=period)
+        #     pct_end= pct[pct["trade_date"]==end_date]
+        #     pct_start=pct[pct["trade_date"]==start_date]
+        #     pct_end[]
+
+    return res
 
 
 # t = get_date(start_date="20191001",cal=5)
@@ -322,19 +380,22 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg=0, avg_up_times
 
 # t = up_limit_info(period=3,up_limit_times=[2,float('inf')])
 # print(t)
+# search_time=datetime.datetime.strftime(str(datetime.datetime.today().date())+"17:00","%Y-%M-%D%H:%M")
+# print(search_time)
 today = datetime.datetime.today().date()
+print(today)
 today = str(today)[0:10]
-name = stock_basic(name="st|ST", market="科创板")
-# # print(name)
-
-t = avg_up_info(end_date="20191031", period=15, stable1=[-3, 2, 0.03], stable2=[1, 40, 1.20], end_close=0.99,
-                end_avg_close=1.01)
-t = t[t["ts_code"].isin(name)]
-# # print(t["ts_code"].unique().shape)
-t.to_csv(today + "stable.txt")
+# name = stock_basic(name="st|ST", market="科创板")
+#
+#
+# t = avg_up_info(end_date="20191031", period=12, stable1=[-3, 2, 0.03], stable2=[1, 20, 1.15], end_close=0.99,
+#                 end_avg_close=1.01)
+# t = t[t["ts_code"].isin(name)]
+# # # print(t["ts_code"].unique().shape)
+# t.to_csv(today + "stable.txt")
 # t=avg_up_info(period=12,avg_up_times=9)
 # print(t)
 # t = t[t["ts_code"].isin(name)]
-
-
 # t.to_csv(today+"2up9-12.txt",sep='\t')
+
+
