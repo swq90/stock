@@ -123,40 +123,49 @@ def up_limit_info(start_date="", end_date="", period=1, *, up_limit_times=[]):
     # avg_up_times 均价上涨次数
     # avg_chg_pct 均价上涨幅度,avg/pre_avg-1
 # 横盘
-
-
-
+#     当天为x，x-m~x-n之间存在high最高的那天为y，
+#     x日的close大于总均价的pct，close/all_avg>pct
+#     x日的均价小于y日均价的pct
+#     y+2~x 之间，每日均价在当期总均价的3%浮动
+#     y-s~y-t之间，存在最低的low，使得high(y)>pct*low,
+#                               且期间high(s~t)<high(y)
 
 # stable1=[x0:当前日期x0天找到最大值对应y日,x1:y日后x1天至当日,x2：前面时段内每日均价占时段内总均价浮动范围],
-def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_times=0, stable1=[], stable2=[], end_close=0,
-                up_range=[], end_avg_close=0):
+def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_times=0, stable1=[], stable2=[], end_close_pct=0,
+                up_range=[], end_y_avg_pct=0):
     res = pd.DataFrame()
     date_list = get_date(start_date=start_date, end_date=end_date, cal=period)
     date_list.append("")
     date_pre = get_date(start_date=start_date, end_date=end_date, cal=period + 1)
     # print(date_list)
     # print(date_pre)
+    # date 每一个日和上一个交易日对应
     date = pd.DataFrame({"pre_date": date_pre, "trade_date": date_list})
     date.drop(date.tail(1).index, inplace=True)
+    print(date)
 
-    # daily_info
+
+    # daily_info 查询period+1日（为了得到第一天的上一日均价）的所有daily信息
     daily_info = pd.DataFrame()
+    # 可以改成多线程
     for i in date_pre:
         daily_info = pd.concat([pro.daily(trade_date=i), daily_info])
         # print(daily_info.shape)
-    # print(list(daily_info))
+    print(list(daily_info))
 
-    daily = daily_info.eval("avg=amount/vol")
+
+    daily =daily_info.eval("avg=10*amount/vol")
+    print(daily)
 
     pre_daily = daily[["ts_code", "trade_date", "avg"]]
     pre_daily.columns = ["ts_code", "pre_date", "pre_avg"]
-    # print(pre_daily)
+
+    print(pre_daily)
     # print(daily)
     daily = daily.merge(date, on="trade_date")
     daily = daily.merge(pre_daily, left_on=["ts_code", "pre_date"], right_on=["ts_code", "pre_date"])
-    # daily=daily[["t"]]
-    # daily.sort_values("ts_code")
-    # print(daily[daily["ts_code"]=="000555.SZ"])
+    print(daily)
+
     daily = daily.eval("avg_chg_pct=(avg-pre_avg)/pre_avg")
     daily = daily[['ts_code', 'trade_date', "high", "low", "close", 'vol', 'amount', 'avg', 'pre_avg', 'avg_chg_pct']]
     # 满足均价上涨次数
@@ -222,12 +231,12 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_t
         # print(df)
         # print("214",df[df["ts_code"]=="002705.SZ"])
 
-        if end_close:
+        if end_close_pct:
             df.eval("close_avg=close/10/all_avg", inplace=True)
             df_close = df[df["trade_date"] == end_date]
             # print(df_close)
-            df_close = df_close[df_close["close_avg"] >= end_close]
-            # print("end_close",df_close[df_close["ts_code"] == "002705.SZ"])
+            df_close = df_close[df_close["close_avg"] >= end_close_pct]
+            # print("end_close_pct",df_close[df_close["ts_code"] == "002705.SZ"])
             # print(df)
             df = df[df["ts_code"].isin(df_close["ts_code"])]
             # print("fdsf", df[df["ts_code"] == "002705.SZ"])
@@ -235,7 +244,7 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_t
             print("满足close的df")
             # print(list(df_close))
 
-        if end_avg_close:
+        if end_y_avg_pct:
             df_close = df_close[["ts_code", "avg"]]
             # print(df_close)
             df_close.columns = ["ts_code", "close_avg"]
@@ -244,7 +253,7 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_t
             daily_max.eval("close_of_avg=close_avg/avg", inplace=True)
             # print("238", daily_max[daily_max["ts_code"] == "002705.SZ"])
 
-            daily_max = daily_max[daily_max["close_of_avg"] <= end_avg_close]
+            daily_max = daily_max[daily_max["close_of_avg"] <= end_y_avg_pct]
             # print("238", daily_max[daily_max["ts_code"] == "002705.SZ"])
 
             # print("close", df)
@@ -309,66 +318,6 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_t
             return daily_min
 
 
-def get_avg_up(ts_code, start_date="", end_date="", period=1, avg_up_times=0, up_range=[]):
-    # 以后加上日期判定,然后把调用时的recent+1还原
-    res = []
-    if start_date or end_date:
-        pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
-            ["ts_code", "trade_date", "amount", "vol"]]
-        # print(pct)
-        if pct.empty:
-            return
-        if avg_up_times:
-            pct_up_times = pct.eval('avg=amount/vol', inplace=False)
-            pct_up_times = pct_up_times[["ts_code", "trade_date", "avg"]]
-            # pct_up_times = pct_up_times.sort_values(["trade_date"], ascending=False)
-
-            ts = pct_up_times["avg"]
-            ts.name = "pre_avg"
-            ts = ts.drop([0]).reset_index(drop=True)
-            # ts = ts.drop(["index"], axis=1)
-            pct_up_times = pd.concat([pct_up_times, ts], axis=1)
-            t = pct_up_times[pct_up_times["avg"] - pct_up_times["pre_avg"] > 0]["ts_code"].count()
-            # print(pct_up_times)
-            if t >= avg_up_times:
-                if not res:
-                    # print("avg",[ts_code, t])
-                    res.append(ts_code)
-                res.append(t)
-            else:
-                return
-
-        if up_range:
-            # start_date, end_date = get_date(period=period)
-            # pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[
-            #     ["ts_code", "trade_date", "amount", "vol"]]
-            # if pct.empty:
-            #     return
-            # print(pct)
-            pct.drop(pct.tail(1).index, inplace=True)
-            # print(pct)
-            t_amout = pct["amount"].sum()
-            t_vol = pct["vol"].sum()
-            t = pct[pct["trade_date"] == end_date]
-
-            pct_range = t['amount'] / t["vol"] / (t_amout / t_vol)
-            pct_range = pct_range[0] - 1
-            # print(up_range[0],up_range[1])
-            if (pct_range >= up_range[0]) & (pct_range <= up_range[1]):
-                if not res:
-                    res.append(ts_code)
-                res.append(pct_range)
-            else:
-                return
-        # print(res)
-        # if avg_up_pct:
-        #     start_date, end_date = get_date(period=period)
-        #     pct_end= pct[pct["trade_date"]==end_date]
-        #     pct_start=pct[pct["trade_date"]==start_date]
-        #     pct_end[]
-
-    return res
-
 
 # t = get_date(start_date="20191001",cal=5)
 # s = pro.daily(ts_code="002543.SZ", start_date="20191001", end_date="20191010")
@@ -388,11 +337,11 @@ today = str(today)[0:10]
 # name = stock_basic(name="st|ST", market="科创板")
 #
 #
-# t = avg_up_info(end_date="20191031", period=12, stable1=[-3, 2, 0.03], stable2=[1, 20, 1.15], end_close=0.99,
-#                 end_avg_close=1.01)
+t = avg_up_info(end_date="20191031", period=12, stable1=[-3, 2, 0.03], stable2=[1, 20, 1.15], end_close_pct=0.99,
+                end_y_avg_pct=1.01)
 # t = t[t["ts_code"].isin(name)]
 # # # print(t["ts_code"].unique().shape)
-# t.to_csv(today + "stable.txt")
+# t.to_csv(today + "2stable.txt")
 # t=avg_up_info(period=12,avg_up_times=9)
 # print(t)
 # t = t[t["ts_code"].isin(name)]

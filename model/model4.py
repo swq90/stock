@@ -296,9 +296,9 @@ today = str(today)[0:10]
 # t = f4(period=12,nud=2,up_times=3,range=[0.05,0.3])
 # t.to_csv(today+"limitUp1-3.txt",sep='\t')
 # # 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于5%,换手率1.5%
-# t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
-# t.to_csv(today+"10dayUp1-15%.txt",sep='\t')
+t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
+t.to_csv(today+"10dayUp1-15%.txt",sep='\t')
 # 12天内上涨次数>=9
-t= f5(period =12,avg_up_times=9)
-t.to_csv(today+"up9-12.txt",sep='\t')
-print(t)
+# t= f5(period =12,avg_up_times=9)
+# t.to_csv(today+"up9-12.txt",sep='\t')
+# print(t)
