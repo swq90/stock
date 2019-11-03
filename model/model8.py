@@ -166,7 +166,7 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
     # for code in daily["ts_code"].unique():
     #      m = daily[daily["ts_code"]==code][["trade_date","amount","vol"]]
     for d in date_list:
-        print(d)
+
         # print(date_pre[date_pre.index(d)-ma+1:date_pre.index(d)+1])
         m = daily[daily["trade_date"].isin(date_pre[date_pre.index(d) - ma + 1:date_pre.index(d)+1])]
         # print("m",m[m["ts_code"]=='002638.SZ' ])
@@ -175,11 +175,15 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
         m["trade_date"] = pd.DataFrame(t)
         m["ma"] = m["amount"] * 10 / m["vol"]
         # print(m)
+
+
+
         ma_data = pd.concat([m[["ts_code", "trade_date", "ma"]], ma_data])
     print(daily[daily["ts_code"] == "002417.SZ"])
     daily = daily.merge(ma_data, on=["ts_code", "trade_date"])
     # print(daily.shape)
-    print("MA", daily[daily["ts_code"] == "603022.SH"])
+    # print("MA", daily[daily["ts_code"] == "603022.SH"])
+    # daily[daily["ts_code"].apply(lambda x:print(x))
 
     up_daily = \
     daily[(daily["low"] > daily["ma"]) & (daily["trade_date"].isin(date_list[-up_days:]))].groupby("ts_code")[
@@ -219,33 +223,31 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
     # daily = daily[daily["pct"] >= up_pct]
     # print(time.time(),"pct")
 
-    # 过滤上市日期不符合的股票
-    # data['交易时间'] = pd.to_datetime(data['交易时间'])
-    # print(daily)
-    # stock_basic = pro.stock_basic()[['ts_code', 'list_date']]
-    # daily["trade_date_new"]=pd.to_datetime(daily["trade_date"])
-    # # daily= daily[["trade_date"]]
 
-    # daily.eval("s=trade_date_new+1")
-
-    # daily = daily.merge(stock_basic, on="ts_code")
-    # daily["day"]= daily["trade_date"].apply(
-    #     lambda x: (datetime.date(int(x[:4]),int(x[4:6]),int(x[6:]))
-    #                                    - datetime.timedelta(days=35)) )
-    # daily["days"] = daily.apply(
-    #     lambda row: (datetime.date(int(row["trade_date"][:4]), int(row["trade_date"][4:6]), int(row["trade_date"][6:]))
-    #                  - datetime.date(int(row["list_date"][:4]), int(row["list_date"][4:6]),
-    #                                  int(row["list_date"][6:]))).days, axis=1)
-    # # print(t)
-
-    # daily = daily[daily["days"] > list_days]
-    # print(daily)
-    # print(daily.shape)
-
-    # print(stock_basic)
-    # print(daily.info())
     print(daily["ts_code"].unique().shape)
     return daily
+
+
+def score(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #
