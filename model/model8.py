@@ -182,7 +182,6 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
     print(daily[daily["ts_code"] == "002417.SZ"])
     daily = daily.merge(ma_data, on=["ts_code", "trade_date"])
     # print(daily.shape)
-    # print("MA", daily[daily["ts_code"] == "603022.SH"])
     # daily[daily["ts_code"].apply(lambda x:print(x))
 
     up_daily = \
@@ -193,13 +192,11 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
     # print(daily)
     daily = daily[daily["ts_code"].isin(up_daily["ts_code"])]
     print(daily.shape)
-    print("UP", daily[daily["ts_code"] == "603022.SH"])
 
     stable_daily = daily[daily["trade_date"].isin(date_list[:stable_days])]
     stable_daily = \
     daily[(daily["high"] * stable_pct[0] > daily["ma"]) & (daily["low"] * stable_pct[1] < daily["ma"])].groupby(
         "ts_code")["trade_date"].size().reset_index()
-    print("UP", stable_daily[stable_daily["ts_code"] == "603022.SH"])
 
 
     stable_daily = stable_daily[stable_daily["trade_date"] >= (stable_days * stable_times_pct)]
@@ -228,26 +225,8 @@ def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pc
     return daily
 
 
-def score(data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+def score(data):
+    pass
 
 
 #

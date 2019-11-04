@@ -327,11 +327,11 @@ today = str(today)[0:10]
 name = stock_basic(name="st|ST", market="科创板")
 # # print(name)
 
-t = avg_up_info(end_date="20191101", period=15, stable1=[-3, 2, 0.03], stable2=[1, 40, 1.20], end_close=0.99,
-                end_avg_close=1.01)
-t = t[t["ts_code"].isin(name)]
-# # print(t["ts_code"].unique().shape)
-t.to_csv(today + "stable.txt",sep='\t')
+# t = avg_up_info(end_date="20191101", period=15, stable1=[-3, 2, 0.03], stable2=[1, 40, 1.20], end_close=0.99,
+#                 end_avg_close=1.01)
+# t = t[t["ts_code"].isin(name)]
+# # # print(t["ts_code"].unique().shape)
+# t.to_csv(today + "stable.txt",sep='\t')
 t=avg_up_info(period=12,avg_up_times=9)
 # print(t)
 # t = t[t["ts_code"].isin(name)]
