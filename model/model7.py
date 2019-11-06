@@ -334,7 +334,7 @@ def avg_up_info(start_date="", end_date="", period=1, *, avg_chg_pct=0, avg_up_t
 today = datetime.datetime.today().date()
 print(today)
 today = str(today)[0:10]
-# name = stock_basic(name="st|ST", market="科创板")
+name = stock_basic(name="st|ST", market="科创板")
 #
 #
 # t = avg_up_info(end_date="20191031", period=12, stable1=[-3, 2, 0.03], stable2=[1, 20, 1.15], end_close_pct=0.99,
@@ -342,15 +342,15 @@ today = str(today)[0:10]
 # t = t[t["ts_code"].isin(name)]
 # # # print(t["ts_code"].unique().shape)
 # t.to_csv(today + "2stable.txt")
-# t=avg_up_info(period=12,avg_up_times=9)
+t=avg_up_info(period=12,avg_up_times=9)
 # print(t)
-# t = t[t["ts_code"].isin(name)]
-# t.to_csv(today+"2up9-12.txt",sep='\t')
+t = t[t["ts_code"].isin(name)]
+t.to_csv(today+"2up9-12.txt",sep='\t')
 
-
-m=ts.pro_bar(ts_code="600223.SH",start_date="20190828",ma=[1,])
-
-print(m)
+#
+# m=ts.pro_bar(ts_code="600223.SH",start_date="20190828",ma=[1,])
+#
+# print(m)
 
 
 #

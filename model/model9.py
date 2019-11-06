@@ -143,7 +143,7 @@ def mark(df,s):
 
     # return df
 
-t,date_list = ma_info(end_date="20191104")
+t,date_list = ma_info()
 
 res1=t[t["trade_date"].isin(date_list[-5:])]
 res2=t[t["trade_date"].isin(date_list[:-5])]

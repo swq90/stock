@@ -130,7 +130,7 @@ def avg_up_info(start_date="", end_date="", period=5, cal=8, *, up_pct=0.4, star
 def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pct=0.95, up_days=4,up_times=1,
             stable_pct=[1.005, 0.995]):
     # res = pd.DataFrame()
-    cal = stable_days + up_days
+     cal = stable_days + up_days
     date_list = get_date(start_date=start_date, end_date=end_date, cal=cal)
     # temp = [""] * ma
     # date_list.extend(temp)
