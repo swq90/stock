@@ -195,11 +195,11 @@ def avg_up_time(up_data, all_data, cal=5):
 
     return up_data
 
-
+print("获取数据",datetime.datetime.now())
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', 1000)
 pd.set_option('display.width', None)
-up_data,all_data, all_data1 = avg_up_info(cal=300, up_pct=0.5)
+up_data,all_data, all_data1 = avg_up_info(cal=10, up_pct=0.5)
 
 # all_data = all_data[all_data["ts_code"].isin(up_data["ts_code"].unique())]
 # print("a",up_data.shape)
@@ -214,29 +214,40 @@ up_data,all_data, all_data1 = avg_up_info(cal=300, up_pct=0.5)
 #
 #     d["概率"] = d[item] / d[item].sum()
 #     print(d)
+
+
+print("处理均线",datetime.datetime.now())
 print("all",all_data)
 print("up",up_data,up_data.shape)
 
 
 
 # basic=basic()
-ma_data=basic().ma(all_data,ma=[1,5,10,20,60])
+print("处理均线",datetime.datetime.now())
+
+ma_data=basic().ma(all_data,ma=[1,10,20,30,60,90,120,150,180])
 ma_data.rename(columns={"trade_date":"pre_date"},inplace=True)
 
 
 
 up_data= up_data.merge(ma_data,on=["ts_code","pre_date"])
 
-
-up_data["1/5"]=(up_data["ma1"]/up_data["ma5"]-1)*100
+#
+# up_data["1/5"]=(up_data["ma1"]/up_data["ma5"]-1)*100
 up_data["1/10"]=(up_data["ma1"]/up_data["ma10"]-1)*100
 up_data["1/20"]=(up_data["ma1"]/up_data["ma20"]-1)*100
 up_data["1/60"]=(up_data["ma1"]/up_data["ma60"]-1)*100
+up_data["1/90"]=(up_data["ma1"]/up_data["ma90"]-1)*100
+up_data["1/120"]=(up_data["ma1"]/up_data["ma120"]-1)*100
+up_data["1/150"]=(up_data["ma1"]/up_data["ma150"]-1)*100
+up_data["1/180"]=(up_data["ma1"]/up_data["ma180"]-1)*100
 
 
 print("60",up_data)
+up_data.to_csv("180五天上涨超50.csv")
 
 # up_data.drop(["high","colse"],axis=1,inplace=True)
-up_data.to_csv("五天上涨超50.csv")
+# up_data.to_csv("五天上涨超50.csv")
 # up_data[["ts_code"]].to_csv("导入五天上涨50.txt")
 # all_data.to_csv("all_data.txt")
+print(datetime.datetime.now())
