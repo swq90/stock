@@ -80,37 +80,32 @@ def avg_up_info(start_date="", end_date="", ma=5, period=5, cal=8, *, up_pct=0.5
 
     daily = daily.merge(daily_pre, left_on=["ts_code", "pre_date"], right_on=['ts_code', 'pre_date'])
 
-
     formula = "pct=" + str(end_p) + "/" + str(start_p) + "-1"
     daily[formula] = daily[end_p] / daily[start_p] - 1
     daily = daily[daily[formula] >= up_pct]
 
-
     # print("aaaaa",daily)
-    del_rept_date=pd.DataFrame()
+    del_rept_date = pd.DataFrame()
     for code in daily["ts_code"].unique():
 
-        df = daily[daily["ts_code"]==code][["ts_code","trade_date","pre_date"]].sort_values(by="trade_date",ascending=False).reset_index(drop=True)
-        i,j= 1,0
+        df = daily[daily["ts_code"] == code][["ts_code", "trade_date", "pre_date"]].sort_values(by="trade_date",
+                                                                                                ascending=False).reset_index(
+            drop=True)
+        i, j = 1, 0
         # print(df)
-        while len(df)> i:
-            if df.iloc[[i],[1]].values >= df.iloc[[j],[2]].values:
+        while len(df) > i:
+            if df.iloc[[i], [1]].values >= df.iloc[[j], [2]].values:
                 df.iloc[[j], [2]] = df.iloc[[i], [2]].values
-                df.iloc[[i],[0]]=[""]
+                df.iloc[[i], [0]] = [""]
             else:
                 j += 1
-            i+=1
+            i += 1
         # print(df)
-        del_rept_date=pd.concat([df[df["ts_code"]!=""],del_rept_date])
+        del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
     # print(del_rept_date)
-    daily.drop(["pre_date"],axis=1,inplace=True)
-    daily=daily.merge(del_rept_date,on=["ts_code","trade_date"])
+    daily.drop(["pre_date"], axis=1, inplace=True)
+    daily = daily.merge(del_rept_date, on=["ts_code", "trade_date"])
     # print(daily)
-
-
-
-
-
 
     # 过滤上市日期不符合的股票
     # data['交易时间'] = pd.to_datetime(data['交易时间'])
@@ -133,7 +128,7 @@ def avg_up_info(start_date="", end_date="", ma=5, period=5, cal=8, *, up_pct=0.5
     print(daily.shape)
 
     daily = daily[daily["days"] > list_days]
-    print(daily.shape,"listday>60")
+    print(daily.shape, "listday>60")
 
     ma_data = pd.DataFrame()
     # for code in daily["ts_code"].unique():
@@ -164,42 +159,41 @@ def avg_up_info(start_date="", end_date="", ma=5, period=5, cal=8, *, up_pct=0.5
     pre_data = daily_info1[["ts_code", "trade_date", "avg", "ma"]]
     pre_data.columns = ["ts_code", "pre_1date", "pre_avg", "pre_ma"]
     daily_info1 = daily_info1.merge(pre_data, on=["ts_code", "pre_1date"])
-    daily_info1.drop(["pre_1date"], axis=1,inplace=True)
-    daily.drop(["list_date","days"],axis=1,inplace=True)
+    daily_info1.drop(["pre_1date"], axis=1, inplace=True)
+    daily.drop(["list_date", "days"], axis=1, inplace=True)
 
-    return daily, daily_info,daily_info1
+    return daily, daily_info, daily_info1
 
 
 def avg_up_time(up_data, all_data, cal=5):
-
     # daily_info["avg"]=daily_info["amount"]*10/daily_info["vol"]
     all_data["up_avg"] = all_data.apply(lambda x: 1 if x["avg"] - x["pre_avg"] > 0 else 0, axis=1)
     all_data["up_ma"] = all_data.apply(lambda x: 1 if x["ma"] - x["pre_ma"] > 0 else 0, axis=1)
-    all_data["low>ma"]=all_data.apply(lambda x:1 if x["low"]>x["ma"] else 0,axis=1)
+    all_data["low>ma"] = all_data.apply(lambda x: 1 if x["low"] > x["ma"] else 0, axis=1)
 
     daily = pd.DataFrame()
     for date in up_data["pre_date"].unique():
-        df= up_data[up_data["pre_date"]==date][["ts_code","trade_date"]]
+        df = up_data[up_data["pre_date"] == date][["ts_code", "trade_date"]]
         date_list = get_date(end_date=date, cal=cal)
         data = all_data[
             (all_data["ts_code"].isin(df["ts_code"])) & all_data["trade_date"].isin(
                 date_list)]
-        data = data.groupby("ts_code")["up_avg", "up_ma","low>ma"].sum().reset_index()
+        data = data.groupby("ts_code")["up_avg", "up_ma", "low>ma"].sum().reset_index()
 
-        df= df.merge(data,on="ts_code")
-        daily=pd.concat([df,daily])
+        df = df.merge(data, on="ts_code")
+        daily = pd.concat([df, daily])
     print(daily)
-    up_data=up_data.merge(daily,on=["ts_code","trade_date"])
+    up_data = up_data.merge(daily, on=["ts_code", "trade_date"])
     print(up_data)
-
 
     return up_data
 
-print("获取数据",datetime.datetime.now())
+
+print("获取数据", datetime.datetime.now())
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', 1000)
 pd.set_option('display.width', None)
-up_data,all_data, all_data1 = avg_up_info(cal=10, up_pct=0.5)
+up_data, all_data, all_data1 = avg_up_info(cal=300, up_pct=0.5)
 
 # all_data = all_data[all_data["ts_code"].isin(up_data["ts_code"].unique())]
 # print("a",up_data.shape)
@@ -216,35 +210,29 @@ up_data,all_data, all_data1 = avg_up_info(cal=10, up_pct=0.5)
 #     print(d)
 
 
-print("处理均线",datetime.datetime.now())
-print("all",all_data)
-print("up",up_data,up_data.shape)
-
-
+print("all", all_data)
+print("up", up_data, up_data.shape)
 
 # basic=basic()
-print("处理均线",datetime.datetime.now())
+print("处理均线", datetime.datetime.now())
 
-ma_data=basic().ma(all_data,ma=[1,10,20,30,60,90,120,150,180])
-ma_data.rename(columns={"trade_date":"pre_date"},inplace=True)
+ma_data = basic().ma(all_data, ma=[90,120,150,180])
+ma_data.rename(columns={"trade_date": "pre_date"}, inplace=True)
 
-
-
-up_data= up_data.merge(ma_data,on=["ts_code","pre_date"])
+up_data = up_data.merge(ma_data, on=["ts_code", "pre_date"])
 
 #
-# up_data["1/5"]=(up_data["ma1"]/up_data["ma5"]-1)*100
-up_data["1/10"]=(up_data["ma1"]/up_data["ma10"]-1)*100
-up_data["1/20"]=(up_data["ma1"]/up_data["ma20"]-1)*100
-up_data["1/60"]=(up_data["ma1"]/up_data["ma60"]-1)*100
-up_data["1/90"]=(up_data["ma1"]/up_data["ma90"]-1)*100
-up_data["1/120"]=(up_data["ma1"]/up_data["ma120"]-1)*100
-up_data["1/150"]=(up_data["ma1"]/up_data["ma150"]-1)*100
-up_data["1/180"]=(up_data["ma1"]/up_data["ma180"]-1)*100
+# # up_data["1/5"]=(up_data["ma1"]/up_data["ma5"]-1)*100
+# up_data["1/10"] = (up_data["ma1"] / up_data["ma10"] - 1) * 100
+# up_data["1/20"] = (up_data["ma1"] / up_data["ma20"] - 1) * 100
+# up_data["1/60"] = (up_data["ma1"] / up_data["ma60"] - 1) * 100
+# up_data["1/90"] = (up_data["ma1"] / up_data["ma90"] - 1) * 100
+# up_data["1/120"] = (up_data["ma1"] / up_data["ma120"] - 1) * 100
+# up_data["1/150"] = (up_data["ma1"] / up_data["ma150"] - 1) * 100
+# up_data["1/180"] = (up_data["ma1"] / up_data["ma180"] - 1) * 100
 
-
-print("60",up_data)
-up_data.to_csv("180五天上涨超50.csv")
+print("60", up_data)
+up_data.to_csv("ma180五天上涨超50.csv")
 
 # up_data.drop(["high","colse"],axis=1,inplace=True)
 # up_data.to_csv("五天上涨超50.csv")
