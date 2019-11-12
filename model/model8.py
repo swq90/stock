@@ -129,100 +129,101 @@ def avg_up_info(start_date="", end_date="", period=5, cal=8, *, up_pct=0.4, star
 
 def ma_info(start_date="", end_date="", ma=5, *, stable_days=60, stable_times_pct=0.95, up_days=4,up_times=1,
             stable_pct=[1.005, 0.995]):
+    pass
     # res = pd.DataFrame()
-     cal = stable_days + up_days
-    date_list = get_date(start_date=start_date, end_date=end_date, cal=cal)
-    # temp = [""] * ma
-    # date_list.extend(temp)
-    date_pre = get_date(start_date=start_date, end_date=end_date, cal=cal + ma)
-
-    # date_pre=date_pre[:-5]
-    print(date_list)
-    print(date_pre)
-    # date = pd.DataFrame({"pre_date": date_pre, "trade_date": date_list})
-    # date.drop(date.tail(5).index, inplace=True)
-    # # print(date)
-
-    # daily_info
-    daily_info = pd.DataFrame()
-    count = 0
-    for i in date_pre:
-        daily_info = pd.concat(
-            [pro.daily(trade_date=i)[['ts_code', 'trade_date', 'high', 'low', "open","close","amount", "vol"]], daily_info])
-        count += 1
-        if count % 190 == 0:
-            time.sleep(60)
-    # print(daily_info)
-    # print(datetime.datetime.time())
-    daily = daily_info
-    print(daily)
-
-    # def get_ma(df):
-    #     df=df.groupby("ts_code")["vol","amount"]
-    #     print(df)
+    #  cal = stable_days + up_days
+    # date_list = get_date(start_date=start_date, end_date=end_date, cal=cal)
+    # # temp = [""] * ma
+    # # date_list.extend(temp)
+    # date_pre = get_date(start_date=start_date, end_date=end_date, cal=cal + ma)
     #
-    # get_ma(daily)
-    ma_data = pd.DataFrame()
-    # for code in daily["ts_code"].unique():
-    #      m = daily[daily["ts_code"]==code][["trade_date","amount","vol"]]
-    for d in date_list:
-
-        # print(date_pre[date_pre.index(d)-ma+1:date_pre.index(d)+1])
-        m = daily[daily["trade_date"].isin(date_pre[date_pre.index(d) - ma + 1:date_pre.index(d)+1])]
-        # print("m",m[m["ts_code"]=='002638.SZ' ])
-        m = m.groupby("ts_code")["vol", "amount"].sum().reset_index()
-        t = [d] * m.shape[0]
-        m["trade_date"] = pd.DataFrame(t)
-        m["ma"] = m["amount"] * 10 / m["vol"]
-        # print(m)
-
-
-
-        ma_data = pd.concat([m[["ts_code", "trade_date", "ma"]], ma_data])
-    print(daily[daily["ts_code"] == "002417.SZ"])
-    daily = daily.merge(ma_data, on=["ts_code", "trade_date"])
+    # # date_pre=date_pre[:-5]
+    # print(date_list)
+    # print(date_pre)
+    # # date = pd.DataFrame({"pre_date": date_pre, "trade_date": date_list})
+    # # date.drop(date.tail(5).index, inplace=True)
+    # # # print(date)
+    #
+    # # daily_info
+    # daily_info = pd.DataFrame()
+    # count = 0
+    # for i in date_pre:
+    #     daily_info = pd.concat(
+    #         [pro.daily(trade_date=i)[['ts_code', 'trade_date', 'high', 'low', "open","close","amount", "vol"]], daily_info])
+    #     count += 1
+    #     if count % 190 == 0:
+    #         time.sleep(60)
+    # # print(daily_info)
+    # # print(datetime.datetime.time())
+    # daily = daily_info
+    # print(daily)
+    #
+    # # def get_ma(df):
+    # #     df=df.groupby("ts_code")["vol","amount"]
+    # #     print(df)
+    # #
+    # # get_ma(daily)
+    # ma_data = pd.DataFrame()
+    # # for code in daily["ts_code"].unique():
+    # #      m = daily[daily["ts_code"]==code][["trade_date","amount","vol"]]
+    # for d in date_list:
+    #
+    #     # print(date_pre[date_pre.index(d)-ma+1:date_pre.index(d)+1])
+    #     m = daily[daily["trade_date"].isin(date_pre[date_pre.index(d) - ma + 1:date_pre.index(d)+1])]
+    #     # print("m",m[m["ts_code"]=='002638.SZ' ])
+    #     m = m.groupby("ts_code")["vol", "amount"].sum().reset_index()
+    #     t = [d] * m.shape[0]
+    #     m["trade_date"] = pd.DataFrame(t)
+    #     m["ma"] = m["amount"] * 10 / m["vol"]
+    #     # print(m)
+    #
+    #
+    #
+    #     ma_data = pd.concat([m[["ts_code", "trade_date", "ma"]], ma_data])
+    # print(daily[daily["ts_code"] == "002417.SZ"])
+    # daily = daily.merge(ma_data, on=["ts_code", "trade_date"])
+    # # print(daily.shape)
+    # # daily[daily["ts_code"].apply(lambda x:print(x))
+    #
+    # up_daily = \
+    # daily[(daily["low"] > daily["ma"]) & (daily["trade_date"].isin(date_list[-up_days:]))].groupby("ts_code")[
+    #     "trade_date"].size().reset_index()
+    # up_daily = up_daily[up_daily["trade_date"] >=up_times]
+    # # print(up_daily)
+    # # print(daily)
+    # daily = daily[daily["ts_code"].isin(up_daily["ts_code"])]
     # print(daily.shape)
-    # daily[daily["ts_code"].apply(lambda x:print(x))
-
-    up_daily = \
-    daily[(daily["low"] > daily["ma"]) & (daily["trade_date"].isin(date_list[-up_days:]))].groupby("ts_code")[
-        "trade_date"].size().reset_index()
-    up_daily = up_daily[up_daily["trade_date"] >=up_times]
-    # print(up_daily)
-    # print(daily)
-    daily = daily[daily["ts_code"].isin(up_daily["ts_code"])]
-    print(daily.shape)
-
-    stable_daily = daily[daily["trade_date"].isin(date_list[:stable_days])]
-    stable_daily = \
-    daily[(daily["high"] * stable_pct[0] > daily["ma"]) & (daily["low"] * stable_pct[1] < daily["ma"])].groupby(
-        "ts_code")["trade_date"].size().reset_index()
-
-
-    stable_daily = stable_daily[stable_daily["trade_date"] >= (stable_days * stable_times_pct)]
-    daily = daily[daily["ts_code"].isin(stable_daily["ts_code"])]
-    # print(daily.shape)
-
-    # 最近五天
-
-    # daily = daily.merge(date, on="trade_date")
-    # print(list(daily),daily.shape)
-    # print(daily)
-    # daily_pre = daily_info[['ts_code', 'trade_date', 'close']]
-    # daily_pre.columns = ['ts_code', 'pre_date', 'close']
-
-    # daily = daily.merge(daily_pre, left_on=["ts_code", "pre_date"], right_on=['ts_code', 'pre_date'])
-
-    # print(list(daily),daily.shape)
-    # print(daily)
-    # formula = "pct=" + str(end_p) + "/" + str(start_p) + "-1"
-    # daily.eval(formula, inplace=True)
-    # daily = daily[daily["pct"] >= up_pct]
-    # print(time.time(),"pct")
-
-
-    print(daily["ts_code"].unique().shape)
-    return daily
+    #
+    # stable_daily = daily[daily["trade_date"].isin(date_list[:stable_days])]
+    # stable_daily = \
+    # daily[(daily["high"] * stable_pct[0] > daily["ma"]) & (daily["low"] * stable_pct[1] < daily["ma"])].groupby(
+    #     "ts_code")["trade_date"].size().reset_index()
+    #
+    #
+    # stable_daily = stable_daily[stable_daily["trade_date"] >= (stable_days * stable_times_pct)]
+    # daily = daily[daily["ts_code"].isin(stable_daily["ts_code"])]
+    # # print(daily.shape)
+    #
+    # # 最近五天
+    #
+    # # daily = daily.merge(date, on="trade_date")
+    # # print(list(daily),daily.shape)
+    # # print(daily)
+    # # daily_pre = daily_info[['ts_code', 'trade_date', 'close']]
+    # # daily_pre.columns = ['ts_code', 'pre_date', 'close']
+    #
+    # # daily = daily.merge(daily_pre, left_on=["ts_code", "pre_date"], right_on=['ts_code', 'pre_date'])
+    #
+    # # print(list(daily),daily.shape)
+    # # print(daily)
+    # # formula = "pct=" + str(end_p) + "/" + str(start_p) + "-1"
+    # # daily.eval(formula, inplace=True)
+    # # daily = daily[daily["pct"] >= up_pct]
+    # # print(time.time(),"pct")
+    #
+    #
+    # print(daily["ts_code"].unique().shape)
+    # return daily
 
 
 def score(data):
