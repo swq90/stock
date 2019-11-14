@@ -5,16 +5,18 @@ import time
 import datetime
 import tushare as ts
 import matplotlib.pyplot as plt
+import model.filter as filter
 
 # ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
-
+TODAY=str(datetime.datetime.today().date())[:10].replace("-","")
+NOTCONTAIN=filter.StockFilter().stock_basic(TODAY,name="st|ST")
 PATH=os.getcwd()
 
 PRICE_COLS = ['open', 'close', 'high', 'low', 'pre_close']
 FORMAT = lambda x: '%.4f' % x
 CAL=[]
-
+print(NOTCONTAIN)
 class basic:
 
     def tradeCal(self, start_date="", end_date="", cal=0, period=0):
@@ -211,8 +213,9 @@ class basic:
         # res = res[res["trade_date"].isin(self.tradeCal(cal=period))]
         return res
 
-    def dis_ma(self, data, ma=[5]):
-        bins = np.arange(-150, 150, 5)
+    def dis_ma(self, data, ma=[5],sec=10,between=155):
+        bins = np.arange(-between, between, sec)
+        print(bins)
         # # ma=[1,5,10,20,60,90,120,150,180]
         # ma = [1, 5, 10]
         # df = self.get_all_ma(data=data,period=5, ma=ma)
@@ -229,19 +232,15 @@ class basic:
     def up_info(self, data, days=5, up_range=0.5):
         # data["avg"]=10*data["amount"]/data["vol"]
 
-        print(data)
         data2 = data[["ts_code", "trade_date", "close"]]
         data2.columns = ["ts_code", "pre%sdate" % days, "pre%sclose" % days]
          # data2.rename(columns={"trade_date":"pre_date"},inplace=True)
 
         pre_date = self.pre_date(data[["trade_date"]], days=days)
-        print(pre_date)
         data = data.merge(pre_date, on="trade_date")
-        # print(data)
         data = data.merge(data2, on=["ts_code", "pre%sdate" % days])
         data["up_pct"] = data["high"] / data["pre%sclose" % days] - 1
         data = data[data["up_pct"] >= up_range]
-        # print(data)
         del_rept_date = pd.DataFrame()
         for code in data["ts_code"].unique():
 
@@ -273,46 +272,77 @@ class basic:
         return data
 
     def to_save(self,data,filename,type=["csv"],path=PATH):
-        pass
+        for t in type:
+            data.to_csv(path+"\\data\\"+datetime.date+filename+"."+t)
+
 
 
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', 1000)
 pd.set_option('display.width', None)
 
-ma=[1]+list(range(0,181,5))[1:]
+ma=[1]+list(range(0,11,5))[1:]
 period = 5
-up_cal = 180
+up_cal = 10
+sec=list(range(2,6,1))
+between=49
+
+pic_pct=0
+pic_range=0
 t = basic()
 query_days = max(ma) + up_cal
-print(ma,query_days)
-
 
 test = t.trade_daily(cal=query_days)
-print("all",test)
-# print(t.tradeCal(cal=up_cal)[:-period])
-up = test[test["trade_date"].isin(t.tradeCal(cal=up_cal)[period:])]
-up = t.up_info(up, days=period, up_range=0.5)
-print("up", up)
+print(test.shape)
+test=test[test["ts_code"].isin(NOTCONTAIN)==False]
 
+
+# print(t.tradeCal(cal=up_cal)[:-period])
+up = test[test["trade_date"].isin(t.tradeCal(cal=up_cal))]
+up = t.up_info(up, days=period, up_range=0.5)
+print("up", up.shape)
+print("all",test.shape,list(test))
 
 test_ma = t.get_all_ma(test, ma=ma)
 print(test_ma)
+
+print(datetime.datetime.now())
+
 up_ma = up[["ts_code", "prendate"]].merge(test_ma, left_on=["ts_code", "prendate"], right_on=["ts_code", "trade_date"])
 test_ma = test_ma[test_ma["trade_date"].isin(t.tradeCal(cal=up_cal))]
 # test_ma.to_csv("all_ma.csv")
-print("up_ma", up_ma)
-test_dis = t.dis_ma(test_ma, ma=ma)
+print("up_ma", list(up_ma),up_ma.shape)
+# test_ma.to_csv("testma.csv")
+# up_ma.to_csv("upma.csv")
 
-up_dis = t.dis_ma(up_ma, ma=ma)
-for i in list(test_dis):
-    test_dis[i].plot(color="g")
-    up_dis[i].plot(color="r",title=i,grid=True)
-    plt.legend(labels=['all-ma', 'up'])
-    plt.show()
-    # plt.savefig
+for i in sec:
+    test_dis = t.dis_ma(test_ma, ma=ma,between=between,sec=i)
+    up_dis = t.dis_ma(up_ma, ma=ma,between=between,sec=i)
+    print("sec",i)
+    print(test_dis)
 
+    print("dis",test_dis.iloc[int(len(test_dis)/2)])
+    print(up_dis)
+    # print(test_dis.ind)
+    test_dis.iloc[int(len(test_dis)/2)].plot(label='all%s'%i,grid=True)
+    up_dis.iloc[int(len(up_dis)/2)].plot(label='up%s'%i,grid=True)
+    # test_dis.to_csv("test-dis%s.csv"%i)
+    # up_dis.to_csv("up-dis%s.csv"%i)
+if pic_pct:
+    for i in list(test_dis):
+        test_dis[i].plot(color="g")
+        up_dis[i].plot(color="r",title=i,grid=True)
+        plt.legend(labels=['all-ma', 'up'])
+        plt.show()
+        # plt.savefig
 
+if pic_range:
+    plt.plot(list(test_dis),test_dis.iloc[int(len(test_dis)/2)],"s-", label="all-ma%s"%i,)
+    plt.plot(list(up_dis),up_dis.iloc[int(len(up_dis)/2)],"o-", label="up-ma%s"%i)
+# plt.xticks(list(test_dis)[::2])
+plt.legend(loc="best")
+plt.show()
+print(datetime.datetime.now())
 # t = basic().tradeCal(start_date="20191105")
 # t = basic().tradeCal(start_date="20191031")
 
