@@ -4,7 +4,6 @@ import pandas as pd
 import tushare as ts
 
 pro = ts.pro_api()
-pro = ts.pro_api()
 
 # 满足给如一组基本信息，过滤
 # 给出一组指标，根据数据取值区间筛选，
@@ -14,7 +13,7 @@ class StockFilter:
 
     # 默认过滤掉传入关键字，如果要
 
-    def stock_basic(self, contain=False, **basic):
+    def stock_basic(self,trade_date, contain=True, **basic):
 
         # basic = {'name':'股票名',
         #          'area': '所在地域',
@@ -28,23 +27,21 @@ class StockFilter:
         #          'is_hs': '是否沪深港通标的，N否 H沪股通 S深股通'}
 
         stock_basic = pro.stock_basic()
-        print(stock_basic.shape)
 
         daily_basic = pro.daily_basic(trade_date="20191028")
-        print(daily_basic.shape)
 
         for key, value in basic.items():
             if key in list(stock_basic) :
                 stock_basic = stock_basic[stock_basic[key].str.contains(value) == contain]
-                print(stock_basic.shape)
+                # print(stock_basic.shape)
                 basic[key] = ""
             elif key in list(daily_basic):
                 daily_basic = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
                 basic[key] = ""
-                print(daily_basic.shape)
+                # print(daily_basic.shape)
 
         stock = pd.merge(stock_basic,daily_basic,on="ts_code")["ts_code"]
-
+        # print(stock.shape)
         return stock
 
 
@@ -72,8 +69,10 @@ class StockFilter:
     #              "": "",
     #              }
 
-
-
-o = StockFilter()
-t = o.stock_basic(total_mv=300000,turnover_rate=1.5,name="st|ST")
-print(t)
+#
+# if __name__=="__main__":
+#     o = StockFilter()
+#     trade_date=datetime.datetime.today().date()
+#     trade_date=str(trade_date)[:10].replace("-","")
+#     t = o.stock_basic(trade_date,name="st|ST")
+#     print(t)
