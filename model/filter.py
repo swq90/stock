@@ -28,21 +28,24 @@ class StockFilter:
 
         stock_basic = pro.stock_basic()
 
-        daily_basic = pro.daily_basic(trade_date="20191028")
+        daily_basic = pro.daily_basic(trade_date="20191108")
 
+
+        res=pd.DataFrame()
         for key, value in basic.items():
             if key in list(stock_basic) :
-                stock_basic = stock_basic[stock_basic[key].str.contains(value) == contain]
-                # print(stock_basic.shape)
+                df = stock_basic[stock_basic[key].str.contains(value) == contain]
+                print(df.shape)
                 basic[key] = ""
             elif key in list(daily_basic):
                 daily_basic = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
                 basic[key] = ""
                 # print(daily_basic.shape)
-
-        stock = pd.merge(stock_basic,daily_basic,on="ts_code")["ts_code"]
-        # print(stock.shape)
-        return stock
+            print("过滤股票条件%s"%key)
+            res=res.append(df[["ts_code"]])
+        res=res.drop_duplicates()
+        print("共过滤掉数据",res.shape[0])
+        return res["ts_code"]
 
 
     # 每日指标

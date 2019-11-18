@@ -249,10 +249,7 @@ def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_
             stocks.append(data)
 
         i += 1
-        if not i % 170:
-            print("has run", i, 'round',len(stocks))
-            # break
-            time.sleep(60)
+
     if up_range:
         stocks = pd.DataFrame(stocks,columns=["ts_code","avg_up_times","up_range"])
     else:
@@ -299,6 +296,6 @@ t.to_csv(today+"limitUp1-3.txt",sep='\t')
 t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.05])
 t.to_csv(today+"10dayUp1-5%.txt",sep='\t')
 # 12天内上涨次数>=9
-# t= f5(period =12,avg_up_times=9)
-# t.to_csv(today+"up9-12.txt",sep='\t')
+t= f5(period =12,avg_up_times=9)
+t.to_csv(today+"up9-12.txt",sep='\t')
 # print(t)
