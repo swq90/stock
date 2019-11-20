@@ -10,7 +10,7 @@ import model.filter as filter
 # ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-NOTCONTAIN = filter.StockFilter().stock_basic(TODAY, name="st|ST")
+NOTCONTAIN = filter.StockFilter().stock_basic(TODAY, name="st|ST", market="科创板")
 PATH = os.getcwd()
 
 PRICE_COLS = ['open', 'close', 'high', 'low', 'pre_close']
@@ -155,9 +155,10 @@ class basic:
         if ma is not None and len(ma) > 0:
             for i in ma:
                 if isinstance(i, int):
-                    data["ma_%s_" % i] = (10 * self.MA(data["amount"], i) / self.MA(data["vol"], i)).map(FORMAT).shift(
+                    data["ma%s" % i] = (10 * self.MA(data["amount"], i) / self.MA(data["vol"], i)).map(FORMAT).shift(
                         -(i - 1))
-                    data["ma_%s_" % i] = data["ma_%s_" % i].astype(float)
+                    data["ma%s" % i] = data["ma%s" % i].astype(float)
+
         return data
 
     def pre_date(self, date_list, days=1):
@@ -173,23 +174,25 @@ class basic:
 
         return res
 
-    def list_days(self, data, days):
+    def list_days(self, data, list_days):
         """
         上市天数
         :param data:
-        :param days:
-        :return:
+        :param list_days:int 上市天数需要大于list_days
+        :return:data[["ts_code", "trade_date", "list_days"]],list_days 当前交易日该股票已经上市天数
         """
         stock_basic = pro.stock_basic()[['ts_code', 'list_date']]
         if not isinstance(data, pd.DataFrame):
+            print("must be dataframe")
             return
         data = data.merge(stock_basic, on="ts_code")
         # data["days"] = data.apply(lambda x: (datetime.date(int(x["trade_date"][:4]), int(x["trade_date"][4:6]),
         #                                                    int(x["trade_date"][6:])) - datetime.date(
         #     int(x["list_date"][:4]), int(x["list_date"][4:6]), int(x["list_date"][6:]))).days, axis=1)
         # days为上市日期到交易日期之间的交易日天数
-        data["days"] = data.apply(lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
-        return data[["ts_code", "trade_date", "days"]]
+        data["list_days"] = data.apply(
+            lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
+        return data[["ts_code", "trade_date", "list_days"]]
 
     def avg_up_info(self):
         pass
@@ -197,25 +200,37 @@ class basic:
     def label(self, data, formula, up_pct=0.5):
         pass
 
-    def get_all_ma(self, data, period=1, ma=[1], is_abs=False):
-        # if not data:
-        #     cal = period + max(ma)
-        #     data = basic().daily(cal=cal)
+    def get_all_ma(self, data, ma=[1], is_abs=False, dis_pct=True):
+        """
+
+        :param data: dataframe 股票数据
+        :param ma: int 列表，需要计算的n日均价
+        :param is_abs: 相对ma1的涨幅是否取绝对值
+        :param dis_pct: 是否求man相对ma1 的浮动   %
+        :return: dataframe
+        """
+        t = datetime.datetime.now()
+
         res = pd.DataFrame()
         # print(data.info())
+        count=0
         for i in data["ts_code"].unique():
+            t1=datetime.datetime.now()
             dm = data[data["ts_code"] == i][["ts_code", "trade_date", "amount", "vol"]]
-            dm = basic().ma(dm, ma=ma)
+            dm = self.ma(dm, ma=ma)
             res = pd.concat([dm, res])
+            count+=1
+            print("%s ma 计算完成"%i,datetime.datetime.now()-t1,count)
+        print(datetime.datetime.now()-t)
+        if dis_pct:
+            for i in ma[1:]:
+                if isinstance(i, int):
+                    res["ma1of%s" % i] = res.apply(lambda x: 100 * (x["ma1"] / x["ma%s" % i] - 1), axis=1)
+                    if is_abs:
+                        # print("abs")
+                        res["ma1of%s" % i] = res["ma1of%s" % i].apply(lambda x: abs(x))
+        print(datetime.datetime.now()-t)
 
-        for i in ma[1:]:
-            if isinstance(i, int):
-                res["ma1of_%s_" % i] = res.apply(lambda x: 100 * (x["ma1"] / x["ma%i" % i] - 1), axis=1)
-                if is_abs:
-                    # print("abs")
-                    res["ma1of_%s_" % i] = res["ma1of_%s_" % i].apply(lambda x: abs(x))
-
-        # res = res[res["trade_date"].isin(self.tradeCal(cal=period))]
         return res
 
     def get_all_slice(self, data, period=1):
@@ -253,8 +268,7 @@ class basic:
             tongji[key] = pd.cut(data[key], bins=bins)
         tongji = tongji.apply(pd.value_counts)
         tongji = tongji.apply(lambda x: 100 * x / len(data))
-        print(tongji)
-        return tongji
+        return tongji.sort_index()
 
     def up_info(self, data, days=5, up_range=0.5):
         """
@@ -264,6 +278,8 @@ class basic:
         :param up_range: float,days涨停下限
         :return: datarame:data       [ts_code trade_date    high pre_n_date  pre_n_close  up_n_pct]
         """
+        t1 = datetime.datetime.now()
+
 
         data2 = data[["ts_code", "trade_date", "close"]]
         data2.columns = ["ts_code", "pre_%s_date" % days, "pre_%s_close" % days]
@@ -273,36 +289,66 @@ class basic:
         data = data.merge(data2, on=["ts_code", "pre_%s_date" % days])
         data["up_pct"] = data["high"] / data["pre_%s_close" % days] - 1
         data = data[data["up_pct"] >= up_range]
+        # data.to_csv("kkk.csv")
+        df = self.revise(data, days=days, rekeys="pre_%s_close", inplace=True)
+        #
+        #
+        # del_rept_date = pd.DataFrame()
+        # for code in data["ts_code"].unique():
+        #
+        #     df = data[data["ts_code"] == code][
+        #         ["ts_code", "trade_date", "pre_%s_date" % days, "pre_%s_close" % days]].sort_values(by="trade_date",
+        #                                                                                         ascending=False).reset_index(
+        #         drop=True)
+        #     #
+        #     # i, j = 1, 0
+        #     #
+        #     # while len(df) > i:
+        #     #     i += 1
+        #     df= self.revise(df,days=days)
+        #     del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
+        # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
+        data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
 
-        data.to_csv("aaa.csv")
+        data["up_n_pct"] = data["high"] / data["pre_n_close"] - 1
+        print("up_data has done,it has %s items" % len(data))
+        # data.to_csv("jjk.csv")
+        print("up 计算完成", datetime.datetime.now() - t1)
 
-        del_rept_date = pd.DataFrame()
+        return data
+
+    def revise(self, data, days=5, rekeys="pre_%s_close", inplace=True,reverse=True):
+        res = pd.DataFrame()
+# all_pre = t.revise(all_pre, days=day, rekeys="ma%spct", inplace=False)
         for code in data["ts_code"].unique():
-
             df = data[data["ts_code"] == code][
-                ["ts_code", "trade_date", "pre_%s_date" % days, "pre_%s_close" % days]].sort_values(by="trade_date",
-                                                                                                ascending=False).reset_index(
+                ["ts_code", "trade_date", "pre_%s_date" % days, rekeys % days]].sort_values(by="trade_date",
+                                                                                            ascending=False).reset_index(
                 drop=True)
-            print("df", df)
+
             i, j = 1, 0
 
             while len(df) > i:
+                if reverse:
+                    if df.at[i, "trade_date"] >= df.at[j, "pre_%s_date" % days]:
+                        df.at[j, "pre_%s_date" % days] = df.at[i, "pre_%s_date" % days]
+                        # df.at[j, "pre_%s_close" % days] = df.at[i, "pre_%s_close" % days]
+                        if inplace:
+                            df.at[j, rekeys % days] = df.at[i, rekeys % days]
+                        df.at[i, "ts_code"] = ""
+                    else:
+                        j = i
 
-                if df.at[i, "trade_date"] >= df.at[j, "pre_%s_date" % days]:
-                    df.at[j, "pre_%s_date" % days] = df.at[i, "pre_%s_date" % days]
-                    df.at[j, "pre_%s_close" % days] = df.at[i, "pre_%s_close" % days]
-
-                    df.at[i, "ts_code"] = ""
                 else:
-                    j = i
-                i += 1
-            del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
-        del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
-        data = data[['ts_code', 'trade_date', 'high']].merge(del_rept_date, on=["ts_code", "trade_date"])
-
-        data["up_n_pct"] = data["high"] / data["pre_n_close"] - 1
-        print("up_data has done,it has %s items"%len(data))
-        return data
+                    if df.at[i, "trade_date"] > df.at[j, "pre_%s_date" % days]:
+                        df.at[i, "ts_code"] = ""
+                    else:
+                        j=i
+                i+=1
+            res = pd.concat([df[df["ts_code"] != ""], res])
+        if inplace:
+            res.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
+        return res
 
     def to_save(self, data, filename, type=["csv"], path=PATH):
         """
@@ -314,198 +360,230 @@ class basic:
         :return:
         """
         for t in type:
-            # data.to_csv(str(path) + "\data\\" + str(datetime.datetime.today())[:10] + filename + "." + t)
-            full_filename=path + "\data\\" + str(datetime.datetime.today())[:16] + filename + "." + t
-            data.to_csv(full_filename)
-            print("has saved file : "+full_filename)
+            full_name = data.to_csv(str(path) + "\\data\\" + str(datetime.datetime.today())[:10] + filename + "." + t)
+
+            data.to_csv(full_name)
+            print("has saved file : ")
 
 
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', 1000)
 pd.set_option('display.width', None)
-days = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-# ma=[1]+list(range(0,11,5))[1:]
-ma = [1]
+ma=[1, 5, 10, 20, 30,60]
+# ma=[1, 5, 10, 20, 30,60,90,120,150,180]
+days = ma[:5]
+
 period = 5
-up_cal = 18
+up_cal = 240
 # sec=list(range(1,6,1))
-between = 20
+sec = 1
+between = 50
 IS_ABS = False
 pic_all_ma = 0
-pic_pct = 0
-pic_range = 0
+pic_pre = 0
+pic_pct=1
 t = basic()
-query_days = max(ma) + up_cal
-
-test = t.trade_daily(cal=query_days)
-print(test.shape)
+query_days = max(max(ma), max(days)) + up_cal
+all_stock = t.trade_daily(cal=query_days)
 # 过滤st市值等
-# test = test[test["ts_code"].isin(NOTCONTAIN) == False]
+all_stock = all_stock[all_stock["ts_code"].isin(NOTCONTAIN) == False]
 
-# print(t.tradeCal(cal=up_cal)[:-period])
-up = test[test["trade_date"].isin(t.tradeCal(cal=up_cal))][['ts_code', 'trade_date',  'high', 'close', 'pre_close']
-]
+up = all_stock[all_stock["trade_date"].isin(t.tradeCal(cal=up_cal))][
+    ['ts_code', 'trade_date', 'high', 'close', 'pre_close']]
 up = t.up_info(up, days=period, up_range=0.5)
+# 计算所有股票n日均价，dis_pct为True计算ma1相对n日均价的涨幅
+all_ma = t.get_all_ma(all_stock, ma=ma, is_abs=IS_ABS, dis_pct=True)
+all_ma = all_ma[all_ma["trade_date"].isin(t.tradeCal(cal=up_cal))]
+# t.to_save(all_ma,"allma")
+# 计算满足上涨条件的
 
-print("up", list(up))
-# print("all",test.shape,list(test))
+up_ma = pd.DataFrame()
+for row in range(len(up)):
+    df = all_ma[(all_ma["ts_code"] == up.at[row, "ts_code"]) & (all_ma["trade_date"] <= up.at[row, "pre_n_date"])]
+    col_name=df.columns.tolist()
+    col_name.insert(2,"up_pre_days")
+    df["up_pre_days"]=
+    df=df.reindex(col_name)
+    up_ma = up_ma.append(df)
+# 计算满足上涨的up 均价
+all_ma.to_csv("all_ma.csv")
+up_ma.to_csv("up_ma.csv")
 
-test_ma = t.get_all_ma(test, ma=ma, is_abs=IS_ABS)
-# print(test_ma)
-
-# print(datetime.datetime.now())
-test_ma = test_ma[test_ma["trade_date"].isin(t.tradeCal(cal=up_cal))]
-print("test", test_ma.shape)
-
-test_ma.to_csv("testma.csv")
-up.to_csv("up.csv")
-
-# t.to_save(test_ma,"allma")
-# t.to_save(up_ma,"upma")
-
-# 求前n天
-
-
-code = 0
-# up前一天所有数据
-# up_ma_drop = pd.DataFrame()
-# for code in range(len(up)):
-#     # print(up.loc[[code], ["trade_date"]].values[0])
-#     # up_ma_drop = pd.concat(test_ma[(test_ma["ts_code"] == up.loc[[code], ["ts_code"]].values[0]) & (
-#     #             test_ma["trade_date"] <= up.loc[[code], ["trade_date"]].values[0]) & (
-#     #                                            test_ma["trade_date"] >= up.loc[[code], ["prendate"]].values[0])])
-#     up_ma_drop = up_ma_drop.append(test_ma1[(test_ma["ts_code"] == up.at[code, "ts_code"]) & (
-#                 test_ma1["trade_date"] <= up.at[code, "trade_date"]) & (
-#                                                test_ma1["trade_date"] >= up.at[code, "prendate"])])
-# print(up_ma_drop.shape)
-# drop_up = test_ma1[test_ma1["ts_code"].isin(up["ts_code"])]
-# print(drop_up.shape)
-# drop_up = drop_up.append(up_ma_drop)
-# print(drop_up.shape)
-# up_ma1 = drop_up.drop_duplicates(["ts_code", "trade_date"], keep=False)
-# print(up_ma1.shape)
-# print(test_ma1.shape)
+if pic_all_ma:
+    all_ma_dis = t.dis_key(all_ma, between=between, sec=sec, keys=list(all_ma)[-len(ma) + 1:])
+    up_ma_dis = t.dis_key(up_ma, between=between, sec=sec, keys=list(up_ma)[-len(ma) + 1:])
+    all_ma_dis.to_csv("all_ma_dis.csv")
+    up_ma_dis.to_csv("up_ma_dis.csv")
 
 
-for day in days:
-    pre_ndays = t.pre_date(test_ma[["trade_date"]], days=day)
-    test_ma1 = test_ma.merge(pre_ndays, on="trade_date")
-    print(list(test_ma1))
-    df = test_ma1[["ts_code", "trade_date", "ma1"]]
-    df.columns = ["ts_code", "pre_%s_date" % day, "pre_ma1"]
-    # print(df,df.info)
-    print(list(df))
-    test_ma1 = pd.merge(test_ma1, df, on=["ts_code", "pre_%s_date" % day])
-    test_ma1["pct"] = test_ma1.apply(lambda x: abs(100 * (x["ma1"] / x["pre_ma1"] - 1)), axis=1)
-    print("testma1", test_ma1)
-    pre_ndays = t.pre_date(up[["prendate"]], days=day)
-    pre_ndays.columns = ["upprendays", "prendate"]
-    up1 = up.merge(pre_ndays, on="prendate")
-    print(up1)
-    up_ma1 = pd.DataFrame()
-    for i in range(len(up1)):
-        # print(up.at[i, "ts_code"],up.at[code, "prendate"],up.at[code, "upprendays"])
-        up_ma1 = up_ma1.append(test_ma1[(test_ma1["ts_code"] == up1.at[i, "ts_code"]) & (
-                test_ma1["trade_date"] <= up1.at[code, "prendate"]) & (
-                                                test_ma1["trade_date"] >= up1.at[code, "upprendays"])],
-                               ignore_index=True)
-        # print("aaaa",up_ma1)
-    print(test_ma1)
-    print(up_ma1)
-    test_ma1 = t.dis_key(test_ma1, ma=ma, between=between, is_abs=IS_ABS, key="pct")
-    up_ma1 = t.dis_key(up_ma1, ma=ma, between=between, is_abs=IS_ABS, key="pct")
-    test_ma1["pct"].plot(label="all")
-    up_ma1["pct"].plot(label="limit_up", title=str(day) + "fluctuate", grid=True)
-    # plt.legend(labels=[ 'all-ma','up'])
-    plt.legend(loc="best")
-    plt.show()
+    print("准备画图：pct(ma1/man)")
+    for col_name in list(all_ma_dis):
+        all_ma_dis[col_name].plot(label="all")
+        up_ma_dis[col_name].plot(label="up", title=str(datetime.datetime.today())[:10] + col_name, grid=True)
+        plt.legend(loc="best")
+        plt.savefig(os.getcwd() + "\\" + str(datetime.datetime.today()).replace(":", "").replace(" ", "")[
+                                         :20] + col_name + "pct.png")
+        plt.show()
+    print("准备画图：不同区间pct(ma1/man)")
+    # d.drop(d[d.apply(lambda x: sum(x), axis=1) < 3].index, inplace=True)
+    # all_ma_dis.drop(all_ma_dis[all_ma_dis.apply(lambda x:sum(x),axis=1)<=0].index,inplace=True)
+    # up_ma_dis.drop(up_ma_dis[up_ma_dis.apply(lambda x: sum(x), axis=1) <=0].index, inplace=True)
 
-# 不算周期，只算前第n天的数据
-noperiod = 1
 
-if noperiod:
-    for day in days:
-        pre_ndays = t.pre_date(test_ma[["trade_date"]], days=day)
-        test_ma1 = test_ma.merge(pre_ndays, on="trade_date")
 
-        df = test_ma1[["ts_code", "trade_date", "ma1"]]
-        df.columns = ["ts_code", "pre_%s_date" % day, "pre_ma1"]
-        # print(df,df.info)
-        test_ma1 = pd.merge(test_ma1, df, on=["ts_code", "pre_%s_date" % day])
-        test_ma1["pct"] = test_ma1.apply(lambda x: abs(100 * (x["ma1"] / x["pre_ma1"] - 1)), axis=1)
-        print("ma1", test_ma1)
-        pre_ndays = t.pre_date(up[["prendate"]], days=day)
-        pre_ndays.columns = ["upprendays", "prendate"]
-        up1 = up[["ts_code", "prendate"]]
-        up1 = up1.merge(pre_ndays, on="prendate")
-        print(list(up1))
-        up1 = up1.rename(columns={"prendate": "trade_date", "upprendays": "pre_%s_date" % day})
-        print(list(up1))
-        up_ma1 = up1.merge(test_ma1, on=["ts_code", "trade_date", "pre_%s_date" % day])
-
-        test_ma1 = t.dis_key(test_ma1, ma=ma, between=between, is_abs=IS_ABS, key="pct")
-        up_ma1 = t.dis_key(up_ma1, ma=ma, between=between, is_abs=IS_ABS, key="pct")
-        test_ma1["pct"].plot(label="all")
-        up_ma1["pct"].plot(label="limit_up", title="pre_no." + str(day) + "fluctuate", grid=True)
-        # plt.legend(labels=[ 'all-ma','up'])
+    for row in range(len(all_ma_dis)):
+        # print("v",all_ma_dis.index.values[row])
+        # print("str",str(all_ma_dis.index.values[row]))
+        all_ma_dis.iloc[row].plot(label="all")
+        up_ma_dis.iloc[row].plot(label="up", title=str(datetime.datetime.today())[:10]+"pct" + str(all_ma_dis.index.values[row]), grid=True)
+        plt.savefig(os.getcwd() + "\\" + str(datetime.datetime.today()).replace(":", "").replace(" ", "")[:20] + str(
+            row) + "range_pct.png")
         plt.legend(loc="best")
         plt.show()
-
-# up_ma = up[["ts_code", "prendate"]].merge(test_ma, left_on=["ts_code", "prendate"], right_on=["ts_code", "trade_date"])
-# print(up_ma)
-# test_ma.to_csv("all_ma.csv")
-print("up_ma1", up_ma1)
-
-#
-#
-#
-#
-#
-#
-# up_ma1 = up[["ts_code", "prendate"]].merge(test_ma1, left_on=["ts_code", "prendate"],
-#                                            right_on=["ts_code", "trade_date"])
-# print(up_ma1)
+    all_ma_dis.to_csv("allmadis.csv")
+    up_ma_dis.to_csv("upmadis.csv")
 
 
-# for i in sec:
-#     test_dis = t.dis_key(test_ma, ma=ma,between=between,sec=i,is_abs=IS_ABS)
-# #     up_dis = t.dis_key(up_ma, ma=ma,between=between,sec=i,is_abs=IS_ABS)
-# #     print("sec",i)
-# #     print(test_dis)
+if pic_pre:
+    for day in days:
+        pre_n_days = t.pre_date(all_ma[["trade_date"]], days=day)
+        pre_ma = all_ma[["ts_code", "trade_date", "ma%s" % day]]
+        pre_ma.columns = ["ts_code", "pre_%s_date" % day, "pre_ma%s" % day]
+        all_pre = all_ma[["ts_code", "trade_date", "ma%s" % day]].merge(pre_n_days, on="trade_date")
+        all_pre = all_pre.merge(pre_ma, on=["ts_code", "pre_%s_date" % day])
+        all_pre["ma%spct" % day] = (all_pre["pre_ma%s" % day] / all_pre["ma%s" % day] - 1) * 100
+        up_pre = up_ma[["ts_code", "trade_date"]].merge(all_pre, on=["ts_code", "trade_date"])
+        all_pre.to_csv("all1.csv")
+        up_pre.to_csv("up1.csv")
+
+        if day!=1:
+            all_pre = t.revise(all_pre, days=day, rekeys="ma%spct", inplace=False,reverse=False)
+            print("up_pre.revise")
+            up_pre = t.revise(up_pre, days=day, rekeys="ma%spct", inplace=False,reverse=False)
+            all_pre.to_csv("all2.csv")
+
+        all_pre_dis = t.dis_key(all_pre, between=between, sec=sec, keys=list(all_pre)[-1:])
+        up_pre_dis = t.dis_key(up_pre, between=between, sec=sec, keys=list(up_pre)[-1:])
+        all_pre_dis.to_csv("all%spct.csv"%day)
+        up_pre_dis.to_csv("up%spct.csv"%day)
+        print(all_pre_dis)
+        print(up_pre_dis)
+        # all_pre_dis.drop(all_pre_dis[all_pre_dis.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+        # up_pre_dis.drop(up_pre_dis[up_pre_dis.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+        df= pd.merge(all_pre_dis,up_pre_dis,left_index=True,right=True,how="outer")
+        print(df)
+        df.columns=["all","up"]
+        df.drop(df[df.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+
+        df["all"].plot(label="all")
+        df["up"].plot(label="up", title="pre%spct" % day, grid=True)
+
+        # all_pre_dis["ma%spct" % day].plot(label="all")
+        # up_pre_dis["ma%spct" % day].plot(label="up", title="pre%spct" % day, grid=True)
+        plt.legend(loc="best")
+        plt.savefig(os.getcwd() + "\\" + str(datetime.datetime.today()).replace(":", "").replace(" ", "")[
+                                         :20] + "period%spre_pct.png" % day)
+        plt.show()
+
+        # for row in len(up):
+        #     df=all_ma[(all_ma["ts_code"]==up.at[row,"ts_code"])&(all_ma["trade_date"]<=up.at[row,"pre_n_date"])]
+        #     df=t.revise(df, days=day,rekeys="pre_ma%s",inplace=False)
+        #     up_pre=up_pre.append(df)
+        all_pre_dis.to_csv("all%spct.csv"%day)
+        up_pre_dis.to_csv("up%spct.csv"%day)
+
+if pic_pct:
+    for day in days:
+        pre_n_days = t.pre_date(all_ma[["trade_date"]], days=day)
+        pre_ma = all_ma[["ts_code", "trade_date", "ma%s" % day]]
+        pre_ma.columns = ["ts_code", "pre_%s_date" % day, "pre_ma%s" % day]
+        all_pre = all_ma[["ts_code", "trade_date", "ma%s" % day]].merge(pre_n_days, on="trade_date")
+        all_pre = all_pre.merge(pre_ma, on=["ts_code", "pre_%s_date" % day])
+        all_pre["ma%spct" % day] = (all_pre["pre_ma%s" % day] / all_pre["ma%s" % day] - 1) * 100
+        up_pre = up_ma[["ts_code", "trade_date"]].merge(all_pre, on=["ts_code", "trade_date"])
+        all_pre.to_csv("all1.csv")
+        up_pre.to_csv("up1.csv")
+
+        if day != 1:
+            all_pre = t.revise(all_pre, days=day, rekeys="ma%spct", inplace=False, reverse=False)
+            print("up_pre.revise")
+            up_pre = t.revise(up_pre, days=day, rekeys="ma%spct", inplace=False, reverse=False)
+            all_pre.to_csv("all2.csv")
+
+        all_pre_dis = t.dis_key(all_pre, between=between, sec=sec, keys=list(all_pre)[-1:])
+        up_pre_dis = t.dis_key(up_pre, between=between, sec=sec, keys=list(up_pre)[-1:])
+        all_pre_dis.to_csv("all%spct.csv" % day)
+        up_pre_dis.to_csv("up%spct.csv" % day)
+        print(all_pre_dis)
+        print(up_pre_dis)
+        # all_pre_dis.drop(all_pre_dis[all_pre_dis.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+        # up_pre_dis.drop(up_pre_dis[up_pre_dis.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+        df = pd.merge(all_pre_dis, up_pre_dis, left_index=True, right=True, how="outer")
+        print(df)
+        df.columns = ["all", "up"]
+        df.drop(df[df.apply(lambda x: sum(x), axis=1) <= 0].index, inplace=True)
+
+        df["all"].plot(label="all")
+        df["up"].plot(label="up", title="pre%spct" % day, grid=True)
+
+        # all_pre_dis["ma%spct" % day].plot(label="all")
+        # up_pre_dis["ma%spct" % day].plot(label="up", title="pre%spct" % day, grid=True)
+        plt.legend(loc="best")
+        plt.savefig(os.getcwd() + "\\" + str(datetime.datetime.today()).replace(":", "").replace(" ", "")[
+                                         :20] + "period%spre_pct.png" % day)
+        plt.show()
+
+        # for row in len(up):
+        #     df=all_ma[(all_ma["ts_code"]==up.at[row,"ts_code"])&(all_ma["trade_date"]<=up.at[row,"pre_n_date"])]
+        #     df=t.revise(df, days=day,rekeys="pre_ma%s",inplace=False)
+        #     up_pre=up_pre.append(df)
+        all_pre_dis.to_csv("all%spct.csv" % day)
+        up_pre_dis.to_csv("up%spct.csv" % day)
+# 涨停股票非涨停期间股票变动
+# up_ma_nup=up_ma.append(up_drop).drop_duplicates(["ts_code", "trade_date"], keep=False)
+
+
+# 1计算所有股票和up股票非涨停期内均价变化pct分布
+# 画图，all 和up非涨停期涨幅落在指定区间的波动曲线 画图
+# 画图，两组数据 在不同的man pct= ma1/man-1 的波动线
+
+# # if pic_all_ma:
+# #     all_stock_dis.iloc[int(len(all_stock_dis) / 2)].plot(label='all_%s_' % i, grid=True)
+# #     up_dis.iloc[int(len(up_dis) / 2)].plot(label='up_%s_' % i, grid=True)
+#
+#
+# # 2计算所有股票和up非涨停期内股票，每一天的前一天均价变化分布，计算每一天的前n天分布
+#     # 每一天和前n天比pct分布
+
+#
+# # 3 计算非涨停期每n天和前n天，两个时间段内均价波动
+#
+
+
+# # #
+# # #     print("dis",all_stock_dis.iloc[int(len(all_stock_dis)/2)])
+# # #     print(up_dis)
+# #     # print(all_stock_dis.ind)
+#
+# # all_stock_dis = t.dis_key(all_ma, ma=ma, between=between, is_abs=IS_ABS)
+# # up_dis = t.dis_key(up_ma, ma=ma, between=between, is_abs=IS_ABS)
+#
+# # t.to_save(all_stock_dis,"mafenbu")
+# # t.to_save(up_dis,"upfenbu")
+# # print(up_dis)
 # #
-# #     print("dis",test_dis.iloc[int(len(test_dis)/2)])
-# #     print(up_dis)
-#     # print(test_dis.ind)
-# if pic_all_ma:
-#     test_dis.iloc[int(len(test_dis) / 2)].plot(label='all_%s_' % i, grid=True)
-#     up_dis.iloc[int(len(up_dis) / 2)].plot(label='up_%s_' % i, grid=True)
-# test_dis.to_csv("test-dis_%s_.csv"%i)
-# up_dis.to_csv("up-dis_%s_.csv"%i)
-#
-# test_dis = t.dis_key(test_ma, ma=ma, between=between, is_abs=IS_ABS)
-# up_dis = t.dis_key(up_ma, ma=ma, between=between, is_abs=IS_ABS)
-
-# t.to_save(test_dis,"mafenbu")
-# t.to_save(up_dis,"upfenbu")
-# print(up_dis)
-#
-# if pic_pct:
-#     for i in list(test_dis):
-#         test_dis[i].plot()
-#         up_dis[i].plot(title=i, grid=True)
-#         plt.legend(labels=['all-ma', 'up'])
-#         # plt.legend(loc="best")
-#         plt.show()
-#         # plt.savefig-
-#
-# if pic_range:
-#     plt.plot(list(test_dis), test_dis.iloc[int(len(test_dis) / 2)], "s-", label="all-ma_%s_" % i, )
-#     plt.plot(list(up_dis), up_dis.iloc[int(len(up_dis) / 2)], "o-", label="up-ma_%s_" % i)
-# # plt.xticks(list(test_dis)[::2])
-# # plt.plot(list(test_dis),test_dis.iloc[int(len(test_dis)/2)],"s-", label="all-ma_%s_"%i,)
-# # plt.plot(list(up_dis),up_dis.iloc[int(len(up_dis)/2)],"o-", label="up-ma_%s_"%i)
-#
-
-print(datetime.datetime.now())
-# t = basic().tradeCal(start_date="20191105")
-# t = basic().tradeCal(start_date="20191031")
+# # if pic_pct:
+# #     for i in list(all_stock_dis):
+# #         all_stock_dis[i].plot()
+# #         up_dis[i].plot(title=i, grid=True)
+# #         plt.legend(labels=['all-ma', 'up'])
+# #         # plt.legend(loc="best")
+# #         plt.show()
+# #         # plt.savefig-
+# #
+# # if pic_range:
+# #     plt.plot(list(all_stock_dis), all_stock_dis.iloc[int(len(all_stock_dis) / 2)], "s-", label="all-ma_%s_" % i, )
+# #     plt.plot(list(up_dis), up_dis.iloc[int(len(up_dis) / 2)], "o-", label="up-ma_%s_" % i)
+# # # plt.xticks(list(all_stock_dis)[::2])
+# # # plt.plot(list(all_stock_dis),all_stock_dis.iloc[int(len(all_stock_dis)/2)],"s-", label="all-ma_%s_"%i,)
+# # # plt.plot(list(up_dis),up_dis.iloc[int(len(up_dis)/2)],"o-", label="up-ma_%s_"%i)
