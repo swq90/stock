@@ -291,8 +291,10 @@ class basic:
             data["up_pct"] = data["close"] / data["pre_%s_close" % days] - 1
         else:
             data["up_pct"] = data["high"] / data["pre_%s_close" % days] - 1
+        data.to_csv("woolpct.csv")
+
         data = data[data["up_pct"] >= up_range]
-        # data.to_csv("kkk.csv")
+        data.to_csv("woolup.csv")
         if revise:
             df = self.revise(data, days=days, rekeys="pre_%s_close", inplace=True)
         #
@@ -321,7 +323,22 @@ class basic:
 
         return data
 
-    # def limit_up_info(self,data,up=0.1):
+    def limit_up_info(self,data):
+        df=pd.DataFrame()
+        for trade_date in data['trade_date'].unique():
+            t=pro.stk_limit(trade_date=trade_date)
+            df=pd.concat([t[['ts_code','trade_date','up_limit','down_limit']],df])
+        df=data.merge(df,on=['ts_code','trade_date'])
+        df=df[df["close"]==df['up_limit']]
+        # df=df[df["close"]==df['down_limit']]
+
+        df.to_csv("limit_up.csv")
+        return df[['ts_code','trade_date']]
+
+
+
+
+
     def revise(self, data, days=5, rekeys="pre_%s_close", inplace=True, reverse=True):
         res = pd.DataFrame()
         # all_pre = t.revise(all_pre, days=day, rekeys="ma%spct", inplace=False)

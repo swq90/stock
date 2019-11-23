@@ -33,18 +33,18 @@ PIN=0.0
 
 pro=ts.pro_api()
 tool=basic.basic()
-data =tool.trade_daily(cal=3)
+data =tool.trade_daily(cal=5)
 print(data.shape)
 data=data[((data["low"]==data["high"]))==False]
 print(data.shape)
 
-data.to_csv("wooldata.csv")
+data.to_csv("wool2data.csv")
 # trade_date=data["trade_date"].unique().tolist()
 # 收盘涨停
-limit_up=tool.up_info(data,days=days,up_range=0.0996,pct=0,revise=0,limit=1).sort_values(by="trade_date")[['ts_code','trade_date','up_pct']].reset_index(drop=True)
+limit_up=tool.limit_up_info(data).sort_values(by="trade_date").reset_index(drop=True)
 print(limit_up)
-limit_up.to_csv("woollimitup.csv")
-d=pd.DataFrame()
+limit_up.to_csv("wool2limitup.csv")
+
 # for trade_date in  data["trade_date"].unique():
 #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
 #     h=z[z["pct_chg"]>=10]
@@ -52,13 +52,14 @@ d=pd.DataFrame()
 # print(limit_up)
 
 buy_data=limit_up.merge(data[['ts_code','trade_date',PRICEB]],on=['ts_code','trade_date'])[['ts_code','trade_date',PRICEB]]
+print(buy_data)
 buy_data.columns=['ts_code','buy_date',"buy_price"]
 pre_date = tool.pre_date(data[["trade_date"]], days=days)
 sold_data=data[['ts_code','trade_date',PRICES]].merge(pre_date,on='trade_date')
 sold_data.rename(columns={"trade_date":"sold_date","pre_%s_date"%days:"buy_date",PRICES:'sold_price'},inplace=True)
 sold_data=sold_data.merge(buy_data,on=['ts_code','buy_date'])
 print(sold_data)
-sold_data.to_csv("woolsold.csv")
+sold_data.to_csv("wool2sold.csv")
 # print(list(sold_data))
 #
 # wool=pd.DataFrame([[0,AMOUNT]])
@@ -85,4 +86,4 @@ wool=pd.DataFrame(wool,columns=['sold_date','amount','vol','pin'])
 
 trade=trade.merge(wool,on='sold_date')
 print(trade)
-trade.to_csv("trade2.csv")
+trade.to_csv("2trade2.csv")
