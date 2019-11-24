@@ -33,7 +33,7 @@ PIN=0.0
 
 pro=ts.pro_api()
 tool=basic.basic()
-data =tool.trade_daily(cal=5)
+data =tool.trade_daily(cal=200)
 print(data.shape)
 data=data[((data["low"]==data["high"]))==False]
 print(data.shape)
@@ -55,35 +55,43 @@ buy_data=limit_up.merge(data[['ts_code','trade_date',PRICEB]],on=['ts_code','tra
 print(buy_data)
 buy_data.columns=['ts_code','buy_date',"buy_price"]
 pre_date = tool.pre_date(data[["trade_date"]], days=days)
-sold_data=data[['ts_code','trade_date',PRICES]].merge(pre_date,on='trade_date')
-sold_data.rename(columns={"trade_date":"sold_date","pre_%s_date"%days:"buy_date",PRICES:'sold_price'},inplace=True)
-sold_data=sold_data.merge(buy_data,on=['ts_code','buy_date'])
-print(sold_data)
-sold_data.to_csv("wool2sold.csv")
-# print(list(sold_data))
+sell_data=data[['ts_code','trade_date',PRICES]].merge(pre_date,on='trade_date')
+sell_data.rename(columns={"trade_date":"sell_date","pre_%s_date"%days:"buy_date",PRICES:'sell_price'},inplace=True)
+sell_data=sell_data.merge(buy_data,on=['ts_code','buy_date'])
+print(sell_data)
+sell_data.to_csv("wool3sell.csv")
+
+# sell_data.to_csv("wool2sell.csv")
+# # print(list(sell_data))
+# #
+# # wool=pd.DataFrame([[0,AMOUNT]])
+# # for trade_date in sell_data['buy_date'].unique().sort_values:
+# #     print(trade_date)
+# #     trade=sell_data.loc[sell_data.buy_date==trade_date]
+# #     stock_price=trade['buy_price'].sum()
+# #     vol=math.floor(AMOUNT/stock_price)
+# #     PIN=AMOUNT-vol*stock_price
+# #     AMOUNT=vol*trade['sell_price'].sum()+PIN
+# #     wool.
+# wool=[[0,AMOUNT,0,PIN]]
 #
-# wool=pd.DataFrame([[0,AMOUNT]])
-# for trade_date in sold_data['buy_date'].unique().sort_values:
-#     print(trade_date)
-#     trade=sold_data.loc[sold_data.buy_date==trade_date]
-#     stock_price=trade['buy_price'].sum()
-#     vol=math.floor(AMOUNT/stock_price)
-#     PIN=AMOUNT-vol*stock_price
-#     AMOUNT=vol*trade['sold_price'].sum()+PIN
-#     wool.
-wool=[[0,AMOUNT,0,PIN]]
-
-trade=sold_data.groupby('sold_date')['buy_price','sold_price'].sum()
-trade.sort_values(by='sold_date',inplace=True)
-for i in range(len(trade)):
-    vol=math.floor(AMOUNT/trade.iloc[i]['buy_price'])
-    PIN=AMOUNT-vol*trade.iloc[i]['buy_price']
-    AMOUNT=vol*trade.iloc[i]['sold_price']+PIN
-    # print(trade.index[i],AMOUNT)
-    wool.append([trade.index[i],AMOUNT,vol,PIN])
-
-wool=pd.DataFrame(wool,columns=['sold_date','amount','vol','pin'])
-
-trade=trade.merge(wool,on='sold_date')
-print(trade)
-trade.to_csv("2trade2.csv")
+# trade=sell_data.groupby('sell_date')['buy_price','sell_price'].sum()
+# trade.sort_values(by='sell_date',inplace=True)
+# for i in range(len(trade)):
+#     vol=math.floor(AMOUNT/trade.iloc[i]['buy_price'])
+#     PIN=AMOUNT-vol*trade.iloc[i]['buy_price']
+#     AMOUNT=vol*trade.iloc[i]['sell_price']+PIN
+#     # print(trade.index[i],AMOUNT)
+#     wool.append([trade.index[i],AMOUNT,vol,PIN])
+#
+# wool=pd.DataFrame(wool,columns=['sell_date','amount','vol','pin'])
+#
+# trade=trade.merge(wool,on='sell_date')
+# print(trade)
+# trade.to_csv("2trade2.csv")
+sell_data['pct']=(sell_data['sell_price']/sell_data['buy_price'])
+sell_cut=sell_data.groupby(by='sell_date')['pct'].mean()
+sell_cut=pd.DataFrame(sell_cut)
+sell_cut['all_pct']=sell_cut['pct'].cumprod()
+sell_cut.to_csv('pctwool.csv')
+print(sell_cut)

@@ -174,6 +174,23 @@ class basic:
 
         return res
 
+    def pre_label(self, data, label, days=1):
+
+        # pre_date = self.pre_date(data[["trade_date"]], days=days)
+        # data = data.merge(pre_date, on="trade_date")
+        # data = data.merge(data2, on=["ts_code", "pre_%s_date" % days])
+
+        pre_day = self.pre_date(date_list=data[['trade_date']], days=days)
+
+        data_pre = data[['ts_code', 'trade_date', label]]
+
+        data_pre.rename(columns={'trade_date': 'pre_%s_date' % days, label: 'pre_%s_' % days + label}, inplace=True)
+
+        data = data.merge(pre_day, on='trade_date')
+        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days],how='left')
+        return data
+
+
     def list_days(self, data, list_days=20):
         """
         上市天数
@@ -193,9 +210,9 @@ class basic:
         # days为上市日期到交易日期之间的交易日天数
         # data["list_days"] = data.apply(
         #     lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
-        return data[data["list_days"]>=list_days][["ts_code","trade_date"]]
+        return data[data["list_days"] >= list_days][["ts_code", "trade_date"]]
 
-    def avg_up_info(self):
+    def avg_up_info(self, data, days):
         pass
 
     def label(self, data, formula, up_pct=0.5):
@@ -221,7 +238,7 @@ class basic:
             dm = self.ma(dm, ma=ma)
             res = pd.concat([dm, res])
             count += 1
-            print("%s ma 计算完成"%i,datetime.datetime.now()-t1,count)
+            print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)
         print(datetime.datetime.now() - t)
         if dis_pct:
             for i in ma[1:]:
@@ -271,7 +288,7 @@ class basic:
         tongji = tongji.apply(lambda x: 100 * x / len(data))
         return tongji.sort_index()
 
-    def up_info(self, data, days=5, up_range=0.5,pct=1,revise=1,limit=0):
+    def up_info(self, data, days=5, up_range=0.5, pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
@@ -297,23 +314,23 @@ class basic:
         data.to_csv("woolup.csv")
         if revise:
             df = self.revise(data, days=days, rekeys="pre_%s_close", inplace=True)
-        #
-        #
-        # del_rept_date = pd.DataFrame()
-        # for code in data["ts_code"].unique():
-        #
-        #     df = data[data["ts_code"] == code][
-        #         ["ts_code", "trade_date", "pre_%s_date" % days, "pre_%s_close" % days]].sort_values(by="trade_date",
-        #                                                                                         ascending=False).reset_index(
-        #         drop=True)
-        #     #
-        #     # i, j = 1, 0
-        #     #
-        #     # while len(df) > i:
-        #     #     i += 1
-        #     df= self.revise(df,days=days)
-        #     del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
-        # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
+            #
+            #
+            # del_rept_date = pd.DataFrame()
+            # for code in data["ts_code"].unique():
+            #
+            #     df = data[data["ts_code"] == code][
+            #         ["ts_code", "trade_date", "pre_%s_date" % days, "pre_%s_close" % days]].sort_values(by="trade_date",
+            #                                                                                         ascending=False).reset_index(
+            #         drop=True)
+            #     #
+            #     # i, j = 1, 0
+            #     #
+            #     # while len(df) > i:
+            #     #     i += 1
+            #     df= self.revise(df,days=days)
+            #     del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
+            # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
             data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
         if pct:
             data["up_n_pct"] = data["high"] / data["pre_n_close"] - 1
@@ -323,21 +340,17 @@ class basic:
 
         return data
 
-    def limit_up_info(self,data):
-        df=pd.DataFrame()
+    def limit_up_info(self, data):
+        df = pd.DataFrame()
         for trade_date in data['trade_date'].unique():
-            t=pro.stk_limit(trade_date=trade_date)
-            df=pd.concat([t[['ts_code','trade_date','up_limit','down_limit']],df])
-        df=data.merge(df,on=['ts_code','trade_date'])
-        df=df[df["close"]==df['up_limit']]
+            t = pro.stk_limit(trade_date=trade_date)
+            df = pd.concat([t[['ts_code', 'trade_date', 'up_limit', 'down_limit']], df])
+        df = data.merge(df, on=['ts_code', 'trade_date'])
+        df = df[df["close"] == df['up_limit']]
         # df=df[df["close"]==df['down_limit']]
 
         df.to_csv("limit_up.csv")
-        return df[['ts_code','trade_date']]
-
-
-
-
+        return df[['ts_code', 'trade_date']]
 
     def revise(self, data, days=5, rekeys="pre_%s_close", inplace=True, reverse=True):
         res = pd.DataFrame()
@@ -386,5 +399,3 @@ class basic:
 
             data.to_csv(full_name)
             print("has saved file : ")
-
-
