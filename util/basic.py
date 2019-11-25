@@ -191,6 +191,23 @@ class basic:
         return data
 
 
+    def pre_label2(self, data, labels, days=1):
+
+        # pre_date = self.pre_date(data[["trade_date"]], days=days)
+        # data = data.merge(pre_date, on="trade_date")
+        # data = data.merge(data2, on=["ts_code", "pre_%s_date" % days])
+
+        pre_day = self.pre_date(date_list=data[['trade_date']], days=days)
+
+        data_pre = data[['ts_code', 'trade_date', labels]]
+
+        data_pre.rename(columns={'trade_date': 'pre_%s_date' % days, labels: 'pre_%s_' % days + labels}, inplace=True)
+
+        data = data.merge(pre_day, on='trade_date')
+        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days],how='left')
+        return data
+
+
     def list_days(self, data, list_days=20):
         """
         上市天数
@@ -236,9 +253,9 @@ class basic:
             t1 = datetime.datetime.now()
             dm = data[data["ts_code"] == i][["ts_code", "trade_date", "amount", "vol"]]
             dm = self.ma(dm, ma=ma)
-            res = pd.concat([dm, res])
+            res = pd.concat([dm, res],ignore_index=False)
             count += 1
-            print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)
+            # print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)
         print(datetime.datetime.now() - t)
         if dis_pct:
             for i in ma[1:]:
