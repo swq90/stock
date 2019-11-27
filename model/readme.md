@@ -77,3 +77,19 @@ low>ma  ts_code
 4       72
 5       29
 先导入所有股票380个交易日的数据，然后踢掉距离上市时间60以内的数据。剩下的，每一条往前五天三个指标的变化都求一遍
+
+
+11-21 model10
+# 当天为n，n日的high和n-5日的close满足high/close-1>=0.4
+# 满足条件的n还满足n-60天内有交易
+# 返回满足条件的股票代码和对应日期
+
+# 对出来的数据做分类，对大数据量多的样本做分析
+#
+    date.drop(date.tail(1).index, inplace=True)
+
+def avg_up_time(up_data, all_data, cal=5):
+    # daily_info["avg"]=daily_info["amount"]*10/daily_info["vol"]
+    all_data["up_avg"] = all_data.apply(lambda x: 1 if x["avg"] - x["pre_avg"] > 0 else 0, axis=1)
+    all_data["up_ma"] = all_data.apply(lambda x: 1 if x["ma"] - x["pre_ma"] > 0 else 0, axis=1)
+    all_data["low>ma"] = all_data.apply(lambda x: 1 if x["low"] > x["ma"] else 0, axis=1)

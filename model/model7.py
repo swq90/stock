@@ -347,7 +347,7 @@ t=avg_up_info(period=12,avg_up_times=9)
 t = t[t["ts_code"].isin(name)]
 t.to_csv(today+"2up9-12.txt",sep='\t')
 
-#
+
 # m=ts.pro_bar(ts_code="600223.SH",start_date="20190828",ma=[1,])
 #
 # print(m)
