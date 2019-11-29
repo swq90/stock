@@ -5,6 +5,7 @@ import tushare as ts
 
 pro = ts.pro_api()
 
+
 # 满足给如一组基本信息，过滤
 # 给出一组指标，根据数据取值区间筛选，
 
@@ -13,7 +14,7 @@ class StockFilter:
 
     # 默认过滤掉传入关键字，如果要
 
-    def stock_basic(self,trade_date, contain=True, **basic):
+    def stock_basic(self, trade_date, contain=True, **basic):
 
         # basic = {'name':'股票名',
         #          'area': '所在地域',
@@ -30,23 +31,23 @@ class StockFilter:
 
         daily_basic = pro.daily_basic(trade_date="20191108")
 
-
-        res=pd.DataFrame()
+        res = pd.DataFrame()
         for key, value in basic.items():
-            if key in list(stock_basic) :
+            if key in list(stock_basic):
                 df = stock_basic[stock_basic[key].str.contains(value) == contain]
                 print(df.shape)
                 basic[key] = ""
             elif key in list(daily_basic):
-                daily_basic = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
+                if key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
+                    daily_basic[key] = daily_basic[key] * 10000
+                df = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
                 basic[key] = ""
                 # print(daily_basic.shape)
-            print("过滤股票条件%s"%key)
-            res=res.append(df[["ts_code"]])
-        res=res.drop_duplicates()
-        print("共过滤掉数据",res.shape[0])
+            print("过滤股票条件%s" % key)
+            res = res.append(df[["ts_code"]])
+        res = res.drop_duplicates()
+        print("共过滤掉数据", res.shape[0])
         return res["ts_code"]
-
 
     # 每日指标
     # def stock_daily(self,**content):
@@ -80,5 +81,25 @@ class StockFilter:
 #     t = o.stock_basic(trade_date,name="st|ST")
 #     print(t)
 # TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-# z=StockFilter().stock_basic(TODAY, name="st|ST", market="科创板").tolist()
-# print(z)
+# # z=StockFilter().stock_basic(TODAY, name="st|ST", market="科创板").tolist()
+# # print(z)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('max_colwidth', 1000)
+# pd.set_option('display.width', None)
+# pd.set_option('display.max_rows', None)
+#
+# daily_basic = pro.daily_basic(trade_date=TODAY)
+# for key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
+#     daily_basic[key] = daily_basic[key] / 10000
+# print(daily_basic.sort_values(by='total_mv'))
+# # yi=pow(10,8)
+# # print(yi)
+# # bins=list(range(0,101,20))+list(range(150,201,50))+list(range(5000,40000,5000))
+# bins=list(range(0,101,20))+[150,200,400,30000]
+# # bins=list(range(0,30000,5000))
+# z=pd.cut(daily_basic['total_mv'],bins=bins)
+# z=pd.DataFrame(z)
+#
+# z=z.apply(pd.value_counts)
+# z.to_csv("cut.csv")
+# print(z.head(20))

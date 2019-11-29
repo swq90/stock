@@ -130,7 +130,7 @@ class basic:
     #             if date_need:
     #                 for day in date_need:
     #                     data = pd.concat([data, pro.daily(trade_date=day)], sort=False)
-    #             df = data[(data["trade_date"].isin(date_ctn)) & (data["ts_code"].isin(stock_list))].groupby("ts_code")[
+    #             df = data[(data["trade_date"].isin(date_ctn)) & (data["ts_code"].isin(stock_list))].by("ts_code")[
     #                 "amount", "vol"].sum().reset_index()
     #             df["trade_date"] = pd.DataFrame([date] * len(df))
     #             res = pd.concat([df, res])
@@ -256,7 +256,7 @@ class basic:
             res = pd.concat([dm, res],ignore_index=False)
             count += 1
             # print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)
-        print(datetime.datetime.now() - t)
+
         if dis_pct:
             for i in ma[1:]:
                 if isinstance(i, int):
