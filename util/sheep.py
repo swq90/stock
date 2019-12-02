@@ -10,46 +10,67 @@ import util.basic as basic
 
 
 def grass(data):
+    # up 满足上涨条件的数据
+    df = sheep(data)
+    score = pd.DataFrame()
     up = tool.up_info(data, days=period, up_range=0.5, pct=0)
-    print('up', up.shape)
+    # print('up', up.shape)
     up = up[up["trade_date"].isin(tool.tradeCal(cal=up_cal))]
-    print('up', up.shape)
+    # print('up', up.shape)
 
+    # for label in labels:
+    #     df = data[['ts_code', 'trade_date', label]]
+    #     print('df', df.shape)
+    #
+    #     # df.loc[:,['count']] = 0
+    #     for i in range(1, pre + 1):
+    #         df = tool.pre_label(df, label=label, days=i)
+    #
+    #         if label == 'low_ma5':
+    #             if i == 1:
+    #                 # .copy(),避免引用warn
+    #                 df['count_%s' % label] = df[label].copy()
+    #                 print(df)
+    #             df['count_%s' % label] = df.apply(
+    #                     lambda x: x['count_%s' % label] + x['pre_%s_%s' % (i, label)], axis=1)
+    #             # df['count_%s'%label]=df['count_%s'%label].astype('int')
+    #
+    #             # else:
+    #             #     if i == 1:
+    #             #         df['count_%s' % label] = df.apply(
+    #             #             lambda x: 1 + x['count_%s' % label] if x[label] >= x['pre_%s_%s' % (i, label)] else x[
+    #             #                 'count_%s' % label], axis=1)
+    #             #
+    #             #     else:
+    #             #         df['count_%s' % label] = df.apply(
+    #             #             lambda x: 1 + x['count_%s' % label] if x['pre_%s_%s' % ((i - 1), label)] >= x[
+    #             #                 'pre_%s_%s' % (i, label)] else x[
+    #             #                 'count_%s' % label], axis=1)
+    #             print(df)
+    #
+    #         else:
+    #             if i == 1:
+    #                 df['count_%s' % label] = df.apply(
+    #                     lambda x: 1 if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
+    #
+    #             else:
+    #                 df['count_%s' % label] = df.apply(
+    #                     lambda x: 1 + x['count_%s' % label] if x['pre_%s_%s' % ((i - 1), label)] >= x[
+    #                         'pre_%s_%s' % (i, label)] else x[
+    #                         'count_%s' % label], axis=1)
+
+    up_pre = up[['ts_code', 'pre_n_date']]
+    up_pre.rename(columns={'pre_n_date': 'trade_date'}, inplace=True)
+    up_pre = up_pre.merge(df, on=['ts_code', 'trade_date'])
+    df = df[df["trade_date"].isin(tool.tradeCal(cal=up_cal))]
+
+    # up_pre_score=up_pre.groupby(by=)
+
+    # df.to_csv(filename + 'all%sindays.csv' % label)
+    # print('df', df.shape)
+    # print('uppre', up_pre.shape)
+    # up_pre.to_csv(filename + 'up_pre%s.csv' % label)
     for label in labels:
-        df = data[['ts_code', 'trade_date', label]]
-        print('df', df.shape)
-
-        # df.loc[:,['count']] = 0
-        for i in range(1, pre + 1):
-            df = tool.pre_label(df, label=label, days=i)
-
-            if label == 'low_ma5':
-                if i == 1:
-                    df['count'] = df[label]
-                else:
-                    df['count'] = df.apply(
-                        lambda x: x['count'] + x['pre_%s_%s' % (i, label)], axis=1)
-
-            else:
-                if i == 1:
-                    df['count'] = df.apply(lambda x: 1 if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
-                else:
-                    df['count'] = df.apply(
-                        lambda x: 1 + x['count'] if x['pre_%s_%s' % ((i - 1), label)] >= x[
-                            'pre_%s_%s' % (i, label)] else x[
-                            'count'], axis=1)
-            print('df', df.shape)
-        df.to_csv(filename + 'all%s.csv' % label)
-
-        df = df.dropna()
-        up_pre = up[['ts_code', 'pre_n_date']]
-        up_pre.rename(columns={'pre_n_date': 'trade_date'}, inplace=True)
-        up_pre = up_pre.merge(df, on=['ts_code', 'trade_date'])
-        df = df[df["trade_date"].isin(tool.tradeCal(cal=up_cal))]
-        # df.to_csv(filename + 'all%sindays.csv' % label)
-        # print('df', df.shape)
-        # print('uppre', up_pre.shape)
-        # up_pre.to_csv(filename + 'up_pre%s.csv' % label)
         up_pre = pd.DataFrame(up_pre.groupby(by='count').size(), columns=['count_%s' % label])
         up_pre['pct'] = up_pre['count_%s' % label] / up_pre['count_%s' % label].sum()
         df = pd.DataFrame(df.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
@@ -63,10 +84,10 @@ def grass(data):
         g['div'] = g['up_pct'] / g['all_pct']
         g['%sscore' % label] = g.apply(lambda x: 10 * x['div'], axis=1) / g['div'].sum()
         print(g)
-        if score.empty:
-            score = g[['%sscore' % label]]
-        else:
-            score = score.merge(g[['%sscore' % label]], left_index=True, right_index=True)
+    if score.empty:
+        score = g[['%sscore' % label]]
+    else:
+        score = score.merge(g[['%sscore' % label]], left_index=True, right_index=True)
     return score
 
 
@@ -79,7 +100,7 @@ def sheep(data):
             df = tool.pre_label(df, label=label, days=i)
 
             if label == 'low_ma5':
-                if i==1:
+                if i == 1:
                     df['count_%s' % label] = df[label]
                 else:
                     df['count_%s' % label] = df.apply(
@@ -100,7 +121,7 @@ def sheep(data):
             else:
                 if i == 1:
                     df['count_%s' % label] = df.apply(
-                        lambda x: 1  if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
+                        lambda x: 1 if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
 
                 else:
                     df['count_%s' % label] = df.apply(
@@ -116,7 +137,7 @@ def sheep(data):
         else:
             res = res.merge(df[['ts_code', 'trade_date', 'count_%s' % label]], on=['ts_code', 'trade_date'])
     print(res.shape)
-    res=res.dropna()
+    res = res.dropna()
     res['count_low_ma5'] = res['count_%s' % label].astype('int')
 
     return res
@@ -127,13 +148,15 @@ def marks(data, score):
     data['score'] = 0
     for label in labels:
         data['score'] = data.apply(lambda x: x['score'] + score.iloc[x['count_%s' % label]]['%sscore' % label], axis=1)
-    # for day in data['trade_date'].unique():
-    #     # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+    for day in data['trade_date'].unique():
+        df = pd.concat([data[data['trade_date'] == day].sort_values(by='trade_date', ascending=False).head(50), df])
     #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
     #
     # data.to_csv(FILENAME + "all_marks.csv")
     # df = df[df['score'] >= 10]
-    # df.to_csv(FILENAME + "30ofall_marks.csv")
+    df.to_csv(filename + "50ofall_marks.csv")
+    data.to_csv(filename + "all_marks.csv")
+
     return data
 
 
@@ -200,6 +223,7 @@ if os.path.isfile(filename + 'data.csv'):
 else:
     data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
     data = data.merge(tool.get_all_ma(data, ma=ma, dis_pct=False), on=['ts_code', 'trade_date'])
+    # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
     data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
     data.to_csv(filename + 'data.csv')
 
