@@ -148,20 +148,20 @@ def marks(data, score):
     data['score'] = 0
     for label in labels:
         data['score'] = data.apply(lambda x: x['score'] + score.iloc[x['count_%s' % label]]['%sscore' % label], axis=1)
-    for day in data['trade_date'].unique():
-        df = pd.concat([data[data['trade_date'] == day].sort_values(by='trade_date', ascending=False).head(50), df])
-    #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
-    #
-    # data.to_csv(FILENAME + "all_marks.csv")
-    # df = df[df['score'] >= 10]
-    df.to_csv(filename + "50ofall_marks.csv")
-    data.to_csv(filename + "all_marks.csv")
+    # for day in data['trade_date'].unique():
+    #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='trade_date', ascending=False).head(50), df])
+    # #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
+    # #
+    # # data.to_csv(FILENAME + "all_marks.csv")
+    # # df = df[df['score'] >= 10]
+    # df.to_csv(filename + "50ofall_marks.csv")
+    # data.to_csv(filename + "all_marks.csv")
 
     return data
 
 
 def wool(stock, data):
-    data = data[((data["low"] == data["high"])) == False]
+    data_buy = data[((data["low"] == data["high"])) == False]
 
     PRICEB = "close"
     PRICES = "close"
@@ -173,19 +173,26 @@ def wool(stock, data):
     #     d=limit_up[limit_up["trade_date"]==trade_date]
     # print(limit_up)
 
-    buy_data = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
+
+    buy_data = limit_up.merge(data_buy[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
+
+
     buy_data.columns = ['ts_code', 'buy_date', "buy_price"]
     pre_date = tool.pre_date(data[["trade_date"]], days=days)
     sell_data = data[['ts_code', 'trade_date', PRICES]].merge(pre_date, on='trade_date')
     sell_data.rename(columns={"trade_date": "sell_date", "pre_%s_date" % days: "buy_date", PRICES: 'sell_price'},
                      inplace=True)
     sell_data = sell_data.merge(buy_data, on=['ts_code', 'buy_date'])
-    sell_data.to_csv(FILENAME + "wool4sell.csv")
+    sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
+    print(sell_data.groupby(by='buy_date')['ts_code'].size().mean())
 
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
-    sell_cut = sell_data.groupby(by='sell_date')['pct'].mean()
-    sell_cut = pd.DataFrame(sell_cut)
+    sell_cut=pd.DataFrame()
+    sell_cut['pct'] = sell_data.groupby(by='sell_date')['pct'].mean()
+    sell_cut['n'] = sell_data.groupby(by='sell_date')['sell_date'].size()
+
+    # sell_cut = pd.DataFrame(sell_cut)
     sell_cut['all_pct'] = sell_cut['pct'].cumprod()
     # sell_cut.to_csv(FILENAME + 'pctwool3.csv')
     # print(sell_cut)
@@ -270,28 +277,46 @@ FILENAME = path + str(run_time).replace(":", "-").replace(' ', '-')[:19] + '-'
 #     stock_score.to_csv(filename + 'stock-score.csv')
 
 stock_marks = stock_marks[stock_marks['score'] >= 10]
-print('marks', stock_marks.shape)
+print('marks1', stock_marks.shape)
 stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (10.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
-stock_marks = stock_marks.merge(stock_need, on=['ts_code', 'trade_date'])
-print('marks', stock_marks.shape)
+# print(stock_need.info())
+# print(stock_marks.info())
+stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+print('marks2', stock_marks.shape)
 
+# data_m = data[((data["low"] == data["high"])) == False]
+# stock_marks.merge(data_m[['ts_code','trade_date']],on=['ts_code', 'trade_date']).to_csv(filename+'50ofall.csv')
+# 保存当天前五十
+print('marks3', stock_marks.shape)
+# mv_bins=[]
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
-print(mv_bins)
-for i in range(len(mv_bins) - 1):
-    CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
-    print((mv_bins[i], mv_bins[i + 1]))
-    stock_data1 = stock_marks.merge(CONTAIN, on=['ts_code', 'trade_date'])
+if mv_bins:
+    print(mv_bins)
+    for i in range(len(mv_bins) - 1):
+        CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
+        print((mv_bins[i], mv_bins[i + 1]))
+        stock_data1 = stock_marks.merge(CONTAIN, on=['ts_code', 'trade_date'])
+        df = pd.DataFrame()
+        for day in stock_data1['trade_date'].unique():
+            # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+            df = pd.concat(
+                [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(50), df])
+            # stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
+        # df.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
+
+        stock = wool(df, data)
+        stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "pct_wool.csv")
+        print(stock)
+else:
     df = pd.DataFrame()
-    for day in stock_data1['trade_date'].unique():
+    for day in stock_marks['trade_date'].unique():
         # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
         df = pd.concat(
-            [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
-        # stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
-    df.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
-
+            [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
+    df.to_csv('sort_data_score.csv')
     stock = wool(df, data)
-    stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "pct_wool.csv")
+    stock.to_csv(FILENAME + "pct_wool.csv")
     print(stock)
 
 # 过滤
