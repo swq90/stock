@@ -8,8 +8,26 @@ import stockfilter
 import tushare as ts
 import util.basic as basic
 
+ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
+pro = ts.pro_api()
+tool = basic.basic()
 
-def grass(data):
+#
+# # CONTAIN = stockfilter.StockFilter().stock_basic('20191127', total_mv=[0,5000000000])
+# # print(CONTAIN.shape)
+# ma = [1, 5]
+# period = 5
+# up_cal = 240
+# temp = 0
+# pre = 5
+# # labels = ['low_ma5', 'low']
+#
+labels = ['low_ma5', 'low', 'ma1', 'ma5']
+
+
+
+
+def grass(data,period=5,up_cal = 240):
     # up 满足上涨条件的数据
     df = sheep(data)
     score = pd.DataFrame()
@@ -91,7 +109,7 @@ def grass(data):
     return score
 
 
-def sheep(data):
+def sheep(data,pre=5):
     res = pd.DataFrame()
     for label in labels:
         df = data[['ts_code', 'trade_date', label]]
@@ -143,7 +161,7 @@ def sheep(data):
     return res
 
 
-def marks(data, score):
+def marks(data, score,labels=labels):
     df = pd.DataFrame()
     data['score'] = 0
     for label in labels:
@@ -160,12 +178,11 @@ def marks(data, score):
     return data
 
 
-def wool(stock, data):
-    data_buy = data[((data["low"] == data["high"])) == False]
+def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
+    # data_buy = data[((data["low"] == data["high"])) == False]
 
-    PRICEB = "close"
-    PRICES = "close"
-    days = 1
+
+
     limit_up = stock[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
     # for trade_date in  data["trade_date"].unique():
     #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
@@ -174,7 +191,7 @@ def wool(stock, data):
     # print(limit_up)
 
 
-    buy_data = limit_up.merge(data_buy[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
+    buy_data = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
 
 
@@ -184,7 +201,7 @@ def wool(stock, data):
     sell_data.rename(columns={"trade_date": "sell_date", "pre_%s_date" % days: "buy_date", PRICES: 'sell_price'},
                      inplace=True)
     sell_data = sell_data.merge(buy_data, on=['ts_code', 'buy_date'])
-    sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
+    # sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
     print(sell_data.groupby(by='buy_date')['ts_code'].size().mean())
 
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
@@ -199,141 +216,131 @@ def wool(stock, data):
     return sell_cut
 
 
-# CONTAIN = stockfilter.StockFilter().stock_basic('20191127', total_mv=[0,5000000000])
-# print(CONTAIN.shape)
-ma = [1, 5]
-period = 5
-up_cal = 240
-temp = 0
-pre = 5
-# labels = ['low_ma5', 'low']
-
-labels = ['low_ma5', 'low', 'ma1', 'ma5']
-# score=pd.DataFrame()
-pro = ts.pro_api()
-tool = basic.basic()
-path = os.getcwd() + '\\data\\'
-if not os.path.isdir(path):
-    os.mkdir('data')
-    print(path)
-filename = path + str(datetime.datetime.today())[:10] + '-'
-score = pd.DataFrame()
-data = pd.DataFrame()
-daily_basic = pd.DataFrame()
-stock_label = pd.DataFrame()
-stock_score = pd.DataFrame()
-stock_marks = pd.DataFrame()
-
-if os.path.isfile(filename + 'data.csv'):
-    data = pd.read_csv(filename + 'data.csv', index_col=0, dtype={'trade_date': object})
-    # data['trade_date']=data['trade_date'].astype('str')
-else:
-    data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
-    data = data.merge(tool.get_all_ma(data, ma=ma, dis_pct=False), on=['ts_code', 'trade_date'])
-    # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
-    data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
-    data.to_csv(filename + 'data.csv')
-
-print("基础数据")
-
-if os.path.isfile(filename + 'score.csv'):
-    score = pd.read_csv(filename + 'score.csv', index_col=0, dtype=np.float64)
-else:
-    score = grass(data)
-    score.to_csv(filename + 'score.csv')
-#     调用方法获得得分表
-print('对应分数')
-
-if os.path.isfile(filename + 'stock-label.csv'):
-    stock_label = pd.read_csv(filename + 'stock-label.csv', index_col=0, dtype={'trade_date': object})
-else:
-    stock_label = sheep(data)
-    stock_label.to_csv(filename + 'stock-label.csv')
-print('各项满足情况')
-
-if os.path.isfile(filename + 'stock_marks.csv'):
-    stock_marks = pd.read_csv(filename + 'stock_marks.csv', index_col=0, dtype={'trade_date': object})
-else:
-    stock_marks = marks(stock_label, score)
-    stock_marks.to_csv(filename + 'stock_marks.csv')
-print('marks', stock_marks.shape)
-
-if os.path.isfile(filename + 'daily-basic.csv'):
-    daily_basic = pd.read_csv(filename + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
-else:
-    for i in data['trade_date'].unique():
-        daily_basic = pd.concat([pro.daily_basic(trade_date=i), daily_basic], ignore_index=True)
-    for key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
-        daily_basic[key] = daily_basic[key] / 10000
-    daily_basic.to_csv(filename + 'daily-basic.csv')
-
-run_time = datetime.datetime.today()
-FILENAME = path + str(run_time).replace(":", "-").replace(' ', '-')[:19] + '-'
-
-# if os.path.isfile(filename+'stock-score.csv'):
-#     stock_score = pd.read_csv(filename + 'stock-score.csv', index_col=0)
+# # score=pd.DataFrame()
+#
+# path = os.getcwd() + '\\data\\'
+# if not os.path.isdir(path):
+#     os.mkdir('data')
+#     print(path)
+# filename = path + str(datetime.datetime.today())[:10] + '-'
+# score = pd.DataFrame()
+# data = pd.DataFrame()
+# daily_basic = pd.DataFrame()
+# stock_label = pd.DataFrame()
+# stock_score = pd.DataFrame()
+# stock_marks = pd.DataFrame()
+#
+# if os.path.isfile(filename + 'data.csv'):
+#     data = pd.read_csv(filename + 'data.csv', index_col=0, dtype={'trade_date': object})
+#     # data['trade_date']=data['trade_date'].astype('str')
 # else:
-#     stock_score = marks(stock_label,score)
-#     stock_score.to_csv(filename + 'stock-score.csv')
-
-stock_marks = stock_marks[stock_marks['score'] >= 10]
-print('marks1', stock_marks.shape)
-stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (10.03 * data['pre_close'])) & (
-        abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
-# print(stock_need.info())
-# print(stock_marks.info())
-stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
-print('marks2', stock_marks.shape)
-
-# data_m = data[((data["low"] == data["high"])) == False]
-# stock_marks.merge(data_m[['ts_code','trade_date']],on=['ts_code', 'trade_date']).to_csv(filename+'50ofall.csv')
-# 保存当天前五十
-print('marks3', stock_marks.shape)
-# mv_bins=[]
-mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
-if mv_bins:
-    print(mv_bins)
-    for i in range(len(mv_bins) - 1):
-        CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
-        print((mv_bins[i], mv_bins[i + 1]))
-        stock_data1 = stock_marks.merge(CONTAIN, on=['ts_code', 'trade_date'])
-        df = pd.DataFrame()
-        for day in stock_data1['trade_date'].unique():
-            # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
-            df = pd.concat(
-                [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(50), df])
-            # stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
-        # df.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
-
-        stock = wool(df, data)
-        stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "pct_wool.csv")
-        print(stock)
-else:
-    df = pd.DataFrame()
-    for day in stock_marks['trade_date'].unique():
-        # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
-        df = pd.concat(
-            [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
-    df.to_csv('sort_data_score.csv')
-    stock = wool(df, data)
-    stock.to_csv(FILENAME + "pct_wool.csv")
-    print(stock)
-
-# 过滤
-
-
-# data.to_csv(FILENAME + "all_marks.csv")
-# df = df[df['score'] >= 10]
-
-
-# stock_del=data[(abs(data['open']-data['close'])<=(0.05*data['pre_close']))&(data['close']>=(0.97*data['preclose']))]
-
-# stock_data=sheep(data)
-# print('stockdata',stock_data.shape)
-
-# # stock_need=stock_need[]
-# print(stock_need)
-# print(stock_need.shape)
+#     data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
+#     data = data.merge(tool.get_all_ma(data, ma=ma, dis_pct=False), on=['ts_code', 'trade_date'])
+#     # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
+#     data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
+#     data.to_csv(filename + 'data.csv')
+#
+# print("基础数据")
+#
+# if os.path.isfile(filename + 'score.csv'):
+#     score = pd.read_csv(filename + 'score.csv', index_col=0, dtype=np.float64)
+# else:
+#     score = grass(data)
+#     score.to_csv(filename + 'score.csv')
+# #     调用方法获得得分表
+# print('对应分数')
+#
+# if os.path.isfile(filename + 'stock-label.csv'):
+#     stock_label = pd.read_csv(filename + 'stock-label.csv', index_col=0, dtype={'trade_date': object})
+# else:
+#     stock_label = sheep(data)
+#     stock_label.to_csv(filename + 'stock-label.csv')
+# print('各项满足情况')
+#
+# if os.path.isfile(filename + 'stock_marks.csv'):
+#     stock_marks = pd.read_csv(filename + 'stock_marks.csv', index_col=0, dtype={'trade_date': object})
+# else:
+#     stock_marks = marks(stock_label, score)
+#     stock_marks.to_csv(filename + 'stock_marks.csv')
+# print('marks', stock_marks.shape)
+#
+# if os.path.isfile(filename + 'daily-basic.csv'):
+#     daily_basic = pd.read_csv(filename + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
+# else:
+#     for i in data['trade_date'].unique():
+#         daily_basic = pd.concat([pro.daily_basic(trade_date=i), daily_basic], ignore_index=True)
+#     for key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
+#         daily_basic[key] = daily_basic[key] / 10000
+#     daily_basic.to_csv(filename + 'daily-basic.csv')
+#
+# run_time = datetime.datetime.today()
+# FILENAME = path + str(run_time).replace(":", "-").replace(' ', '-')[:19] + '-'
+#
+# # if os.path.isfile(filename+'stock-score.csv'):
+# #     stock_score = pd.read_csv(filename + 'stock-score.csv', index_col=0)
+# # else:
+# #     stock_score = marks(stock_label,score)
+# #     stock_score.to_csv(filename + 'stock-score.csv')
+#
+# stock_marks = stock_marks[stock_marks['score'] >= 10]
+# print('marks1', stock_marks.shape)
+# stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
+#         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
+# # stock_need=stock_need[stock_need['close']<(1.1*stock_need['pre_close'])][['ts_code','trade_date']]
+# # print(stock_need.info())
+# # print(stock_marks.info())
+# stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+# print('marks2', stock_marks.shape)
+#
+# # data_m = data[((data["low"] == data["high"])) == False]
+# # stock_marks.merge(data_m[['ts_code','trade_date']],on=['ts_code', 'trade_date']).to_csv(filename+'50ofall.csv')
+# # 保存当天前五十
+# print('marks3', stock_marks.shape)
+# # mv_bins=[]
+# mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
+# if mv_bins:
+#     print(mv_bins)
+#     for i in range(len(mv_bins) - 1):
+#         CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
+#         print((mv_bins[i], mv_bins[i + 1]))
+#         stock_data1 = stock_marks.merge(CONTAIN, on=['ts_code', 'trade_date'])
+#         df = pd.DataFrame()
+#         for day in stock_data1['trade_date'].unique():
+#             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+#             df = pd.concat(
+#                 [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
+#             # stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
+#         df.to_csv(FILENAME + str(mv_bins[i])+ "---30ofall_marks.csv")
+#
+#         stock = wool(df, data)
+#         stock.to_csv(FILENAME + str((mv_bins[i], mv_bins[i + 1])) + "pct_wool.csv")
+#         print(stock)
+# else:
+#     df = pd.DataFrame()
+#     for day in stock_marks['trade_date'].unique():
+#         # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+#         df = pd.concat(
+#             [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
+#     df.to_csv('sort_data_score.csv')
+#     stock = wool(df, data)
+#     stock.to_csv(FILENAME + "pct_wool.csv")
+#     print(stock)
+#
+# # 过滤
+#
+#
+# # data.to_csv(FILENAME + "all_marks.csv")
+# # df = df[df['score'] >= 10]
+#
+#
+# # stock_del=data[(abs(data['open']-data['close'])<=(0.05*data['pre_close']))&(data['close']>=(0.97*data['preclose']))]
+#
+# # stock_data=sheep(data)
+# # print('stockdata',stock_data.shape)
+#
+# # # stock_need=stock_need[]
+# # print(stock_need)
+# # print(stock_need.shape)
 
 # stock_data=stock_data.merge(stock_need[['ts_code','trade_date']],on=['ts_code','trade_date'],how='inner')
 # print('filter',stock_data.shape)

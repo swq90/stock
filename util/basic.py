@@ -6,6 +6,9 @@ import tushare as ts
 import matplotlib.pyplot as plt
 import stockfilter
 
+
+ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
+
 # ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
@@ -75,7 +78,10 @@ class basic:
         if period:
             if start_date:
                 loc = CAL.index(start_date)
-                return (CAL[loc], CAL[loc + period])
+                if loc+period<len(CAL):
+                    return (start_date, CAL[loc + period])
+                else:
+                    return (start_date, '')
             elif end_date:
                 loc = CAL.index(end_date)
                 return (CAL[loc - period], CAL[loc])
@@ -159,19 +165,25 @@ class basic:
                         -(i - 1))
                     data["ma%s" % i] = data["ma%s" % i].astype(float)
 
-        return data
+        return data[list(set(list(data)).difference(('amount','vol')))]
+
 
     def pre_date(self, date_list, days=1):
         res = pd.DataFrame()
         date_list = date_list.iloc[:, [0]].drop_duplicates()
         date_list.columns = ["trade_date"]
+        if days>0:
+            for i in date_list["trade_date"]:
+                day = [self.tradeCal(end_date=i, period=days)]
 
-        for i in date_list["trade_date"]:
-            day = [self.tradeCal(end_date=i, period=days)]
+                res = pd.concat([res, pd.DataFrame(day)])
+            res.columns = ["pre_%s_date" % days, "trade_date"]
+        else:
+            for i in date_list["trade_date"]:
+                day = [self.tradeCal(start_date=i, period=-days)]
 
-            res = pd.concat([res, pd.DataFrame(day)])
-        res.columns = ["pre_%s_date" % days, "trade_date"]
-
+                res = pd.concat([res, pd.DataFrame(day)])
+            res.columns = ["trade_date","pre_%s_date" % days]
         return res
 
     def pre_label(self, data, label, days=1):
@@ -253,6 +265,8 @@ class basic:
             t1 = datetime.datetime.now()
             dm = data[data["ts_code"] == i][["ts_code", "trade_date", "amount", "vol"]]
             dm = self.ma(dm, ma=ma)
+            # print('ma',list(dm))
+
             res = pd.concat([dm, res],ignore_index=False)
             count += 1
             # print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)

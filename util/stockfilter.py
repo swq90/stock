@@ -3,6 +3,7 @@ import time
 import pandas as pd
 import tushare as ts
 
+ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
 
 
