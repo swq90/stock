@@ -49,12 +49,12 @@ class basic:
         # if not CAL or start_date<CAL[0] or end_date>CAL[-1]:
         # start_date 为空总是小于，总是走入,暂时不管/、
 
-        if not CAL or end_date > CAL[-1]:
-            today = datetime.datetime.today().date()
-            today = str(today)[0:10]
-
-            start_date = '' if start_date is None else start_date
-            end_date = today if end_date == '' or end_date is None else end_date
+        if not CAL or end_date > CAL[-1] :
+            # today = datetime.datetime.today().date()
+            # today = str(today)[0:10]
+            #
+            # start_date = '' if start_date is None else start_date
+            # end_date = today if end_date == '' or end_date is None else end_date
 
             # 去掉-,不然日期取值计算错误
             start_date = start_date.replace('-', '')
@@ -169,9 +169,13 @@ class basic:
 
 
     def pre_date(self, date_list, days=1):
+        global CAL
         res = pd.DataFrame()
         date_list = date_list.iloc[:, [0]].drop_duplicates()
         date_list.columns = ["trade_date"]
+        date_list=date_list.sort_values(by='trade_date')
+        if not CAL:
+            CAL=pro.trade_cal(end_date=date_list.iloc[-1]['trade_date'], is_open=1)["cal_date"].sort_values().tolist()
         if days>0:
             for i in date_list["trade_date"]:
                 day = [self.tradeCal(end_date=i, period=days)]
