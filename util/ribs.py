@@ -14,11 +14,12 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5]
 period = 5
-up_cal = 240
-temp = 0
+up_cal = 242
+temp = 300
 pre = 5
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 path = os.getcwd() + '\\data\\'
+datelist=tool.tradeCal(cal=up_cal)
 if not os.path.isdir(path):
     os.mkdir('data')
     print(path)
@@ -41,19 +42,22 @@ else:
     data.to_csv(filename + 'data.csv')
 
 print("基础数据")
-
+print(data['trade_date'].unique().shape)
 if os.path.isfile(filename + 'score.csv'):
     score = pd.read_csv(filename + 'score.csv', index_col=0, dtype=np.float64)
 else:
-    score = sheep.grass(data)
+    score = sheep.grass(data[data['trade_date'].isin(datelist)==True])
     score.to_csv(filename + 'score.csv')
 #     调用方法获得得分表
 print('对应分数')
+data=data[data['trade_date'].isin(datelist)==True]
+print(data['trade_date'].unique().shape)
 
 if os.path.isfile(filename + 'stock-label.csv'):
     stock_label = pd.read_csv(filename + 'stock-label.csv', index_col=0, dtype={'trade_date': object})
 else:
     stock_label = sheep.sheep(data)
+    # stock_label =stock_label[stock_label['trade_date'].isin(datelist)==True]
     stock_label.to_csv(filename + 'stock-label.csv')
 print('各项满足情况')
 
@@ -86,7 +90,11 @@ stock_marks = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_marks.shape)
 stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
+print( stock_need.shape)
+
 stock_need = stock_need[stock_need['close'] < (1.1 * stock_need['pre_close'])]
+print( stock_need.shape)
+
 # print(stock_need.info())
 # print(stock_marks.info())
 stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
@@ -99,10 +107,9 @@ print('marks3', stock_marks.shape)
 mv_bins = []
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
 if mv_bins:
-    print(mv_bins)
     for i in range(len(mv_bins) - 1):
         CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
-        print((mv_bins[i], mv_bins[i + 1]))
+        print('市值',(mv_bins[i], mv_bins[i + 1]))
         stock_data1 = stock_marks.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
         df = pd.DataFrame()
         for day in stock_data1['trade_date'].unique():

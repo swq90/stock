@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import tushare as ts
 import util.basic as basic
 import util.sheep as sheep
-
-pd.set_option('display.max_columns', None)
+#
+# pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('max_colwidth', 1000)
 pd.set_option('display.width', None)
@@ -20,11 +20,13 @@ pre_bins = np.arange(0, 4, inter)
 pro = ts.pro_api()
 tool = basic.basic()
 path = os.getcwd() + '\\data\\'
-data = pd.read_csv(path + '2019-12-05-data.csv', index_col=0, dtype={'trade_date': object})
+data = pd.read_csv(path + '2019-12-10-data.csv', index_col=0, dtype={'trade_date': object})
 today = str(datetime.datetime.today())[:10]
-today = '2019-12-05'
+today = '2019-12-10'
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
-mv_bins=[40,81,20]
+# mv_bins=list(range(0, 101, 20))
+# mv_bins = list((0, 20, 40, 60))
+
 if os.path.isfile(str((0,20))+'-%spre%s.csv'%(inter,day)):
     pct=pd.DataFrame()
     for i in range(1, 1+day):
@@ -43,13 +45,14 @@ if os.path.isfile(str((0,20))+'-%spre%s.csv'%(inter,day)):
         pct.plot(title='pre%s_geshizhifenbuqingkuang'%i,grid=True)
         plt.show()
 else:
+    res=pd.DataFrame()
     for bin in range(len(mv_bins) - 1):
+        if not os.path.isfile(path + today + '-' + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv"):
+            break
         df = pd.read_csv(path + today + '-' + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv", index_col=0,
-                         dtype={'trade_date': object})
-
-        res = pd.DataFrame()
-
-        for i in range(1, 1+day):
+                         dtype={'trade_date': object})[['ts_code','trade_date']]
+        df_res = df.copy()
+        for i in range(day,0,-1):
             # df_p=pd.DataFrame()
 
             pre_date = tool.pre_date(df[["trade_date"]], days=i).reset_index(drop=True)
@@ -59,17 +62,15 @@ else:
             df_p = df_p.merge(pre_date, on='trade_date')
             df_p = df_p.merge(pre_data, on=['ts_code', 'pre_%s_date' % i])
 
-            df_p['pre_%s_ma1_pct' % i] = df_p['pre_%s_ma1' % i] / df_p['ma1']
-
-            print(df_p.shape)
-            res['pre_%s' % i] = pd.cut(df_p['pre_%s_ma1_pct' % i], bins=pre_bins)
-
-        res = res.apply(pd.value_counts)
-        res = res.apply(lambda x:  x / x.sum())
-        # res = res.apply(lambda x:  x / df_p.shape[0])
-        #
+            df_p[str(i)] = df_p['pre_%s_ma1' % i] / df_p['ma1']
+            df_res=df_res.merge(df_p[['ts_code','trade_date',str(i)]],how='outer',on=['ts_code','trade_date'])
+        print(df_res)
+        t=df_res.mean()
+        print(type(t))
+        print(t)
+        res[str((mv_bins[bin], mv_bins[bin + 1]))]=t
         print(res)
-        res.to_csv(str((mv_bins[bin], mv_bins[bin + 1]))+'-%spre%s.csv'%(inter,day))
+        # res.to_csv(str((mv_bins[bin], mv_bins[bin + 1]))+'-%spre%s.csv'%(inter,day))
 
 
 
@@ -79,3 +80,9 @@ else:
         # # print(np.argmax(res))
         # plt.show()
         # print(res.shape)
+    res.loc[0]=1
+    print(res)
+    res.to_csv(today+'historical-trend')
+
+    res.plot(title='historical trend line chart ',grid=True)
+    plt.show()

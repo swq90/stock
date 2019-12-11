@@ -1,10 +1,5 @@
-import os
-import datetime
-import numpy as np
-import math
-import pandas as pd
-import stockfilter
 
+import pandas as pd
 import tushare as ts
 import util.basic as basic
 
@@ -202,7 +197,7 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
                      inplace=True)
     sell_data = sell_data.merge(buy_data, on=['ts_code', 'buy_date'])
     # sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
-    print(sell_data.groupby(by='buy_date')['ts_code'].size().mean())
+    print('每日平均交易量',sell_data.groupby(by='buy_date')['ts_code'].size().mean())
 
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
     sell_cut=pd.DataFrame()

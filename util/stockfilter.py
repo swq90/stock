@@ -5,7 +5,8 @@ import tushare as ts
 
 ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
-
+TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
+# NOTCONTAIN = stockfilter.StockFilter().stock_basic(TODAY, name="st|ST", market="科创板")
 
 # 满足给如一组基本信息，过滤
 # 给出一组指标，根据数据取值区间筛选，
@@ -30,7 +31,7 @@ class StockFilter:
 
         stock_basic = pro.stock_basic()
 
-        daily_basic = pro.daily_basic(trade_date="20191108")
+        daily_basic = pro.daily_basic(trade_date=TODAY)
 
         res = pd.DataFrame()
         for key, value in basic.items():
@@ -104,3 +105,4 @@ class StockFilter:
 # z=z.apply(pd.value_counts)
 # z.to_csv("cut.csv")
 # print(z.head(20))
+
