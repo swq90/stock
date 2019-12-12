@@ -90,15 +90,15 @@ stock_marks = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_marks.shape)
 stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
-print( stock_need.shape)
-
-stock_need = stock_need[stock_need['close'] < (1.1 * stock_need['pre_close'])]
-print( stock_need.shape)
+# print( stock_need.shape)
+#
+# stock_need = stock_need[stock_need['close'] < (1.1 * stock_need['pre_close'])]
+# print( stock_need.shape)
 
 # print(stock_need.info())
 # print(stock_marks.info())
 stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
-print('marks2', stock_marks.shape)
+# print('marks2', stock_marks.shape)
 
 # data_m = data[((data["low"] == data["high"])) == False]
 stock_marks[['ts_code', 'trade_date', 'score']].to_csv(filename + '50ofall.csv')
@@ -130,11 +130,14 @@ df = pd.DataFrame()
 for day in stock_marks['trade_date'].unique():
     # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
     df = pd.concat(
-        [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(50), df])
+        [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
 df.to_csv(filename+'sort_data_score.csv')
 stock = sheep.wool(df, data)
 stock.to_csv(FILENAME + "all-bins-pct_wool.csv")
 print(stock)
+
+
+
 
 
 
