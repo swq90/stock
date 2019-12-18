@@ -201,12 +201,14 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
 
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
     sell_cut=pd.DataFrame()
+    # sell_data.to_csv('pctwool1.csv')
+
     sell_cut['pct'] = sell_data.groupby(by='sell_date')['pct'].mean()
     sell_cut['n'] = sell_data.groupby(by='sell_date')['sell_date'].size()
 
     # sell_cut = pd.DataFrame(sell_cut)
     sell_cut['all_pct'] = sell_cut['pct'].cumprod()
-    # sell_cut.to_csv(FILENAME + 'pctwool3.csv')
+    # sell_cut.to_csv('pctwool2.csv')
     # print(sell_cut)
     return sell_cut
 

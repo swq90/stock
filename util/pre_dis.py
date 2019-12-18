@@ -19,14 +19,15 @@ inter=0.02
 pre_bins = np.arange(0, 4, inter)
 pro = ts.pro_api()
 tool = basic.basic()
-path = os.getcwd() + '\\data\\'
-data = pd.read_csv(path + '2019-12-10-data.csv', index_col=0, dtype={'trade_date': object})
-today = str(datetime.datetime.today())[:10]
-today = '2019-12-10'
+new_dir='\\stockdata\\'+str(datetime.datetime.today().date())+'\\'
+path = os.getcwd() + new_dir
+data = pd.read_csv(path + 'data.csv', index_col=0, dtype={'trade_date': object})
+today = str(datetime.datetime.today().date())
+# today = '2019-12-13'
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
 # mv_bins=list(range(0, 101, 20))
 # mv_bins = list((0, 20, 40, 60))
-
+pictitle='historical trend line chart '
 if os.path.isfile(str((0,20))+'-%spre%s.csv'%(inter,day)):
     pct=pd.DataFrame()
     for i in range(1, 1+day):
@@ -47,9 +48,9 @@ if os.path.isfile(str((0,20))+'-%spre%s.csv'%(inter,day)):
 else:
     res=pd.DataFrame()
     for bin in range(len(mv_bins) - 1):
-        if not os.path.isfile(path + today + '-' + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv"):
+        if not os.path.isfile(path + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv"):
             break
-        df = pd.read_csv(path + today + '-' + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv", index_col=0,
+        df = pd.read_csv(path + str((mv_bins[bin], mv_bins[bin + 1])) + "-30-of-bins.csv", index_col=0,
                          dtype={'trade_date': object})[['ts_code','trade_date']]
         df_res = df.copy()
         for i in range(day,0,-1):
@@ -82,7 +83,9 @@ else:
         # print(res.shape)
     res.loc[0]=1
     print(res)
-    res.to_csv(today+'historical-trend')
+    res.to_csv(path+'historical-trend.csv')
 
     res.plot(title='historical trend line chart ',grid=True)
+    plt.savefig(path+pictitle+'.png')  # 保存图片
+
     plt.show()
