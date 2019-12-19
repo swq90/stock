@@ -286,7 +286,7 @@ def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_
 
 
 today= datetime.datetime.today().date()
-today = str(today)[0:10]
+today = str(today).replace('-','')
 
 #换手率大于1%,股票开头不是688【科创版】,不是st，最后一天换手率大于1%
 # 12天内，最近 2天没涨停，limit_up in (1,2,3),最后一天涨幅大于5%，小于第一天30%
