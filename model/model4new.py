@@ -5,6 +5,8 @@ import time
 import pandas as pd
 import tushare as ts
 
+import util.basic as tool
+
 pro = ts.pro_api()
 
 # 给定首尾时间，返回周期数
@@ -202,7 +204,7 @@ def f4(start_date="",end_date="",period=5,nud=1,range=[],recent=0,avg_up_times=0
     df.to_csv(file_name+".csv")
 
 
-def f5(start_date="",end_date="",period=10,avg_up_times=0,total_mv=None,turnover_rate=None,up_range=[]):
+def f5(start_date="",end_date="",period=1,avg_up_times=0,total_mv=None,turnover_rate=None,up_range=[]):
 
     rs, re = get_date(period=period)
     # df_start = pro.daily(trade_date=rs)[["ts_code", "close"]]
