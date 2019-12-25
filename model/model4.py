@@ -42,6 +42,7 @@ def get_date(start_date="",end_date="",period="",cal=0):
 
 def get_avg_up(ts_code,start_date="",end_date="",period=1,avg_up_times=0,up_range=[]):
     # 以后加上日期判定,然后把调用时的recent+1还原
+
     res =[]
     if start_date or end_date:
         pct = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)[

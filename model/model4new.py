@@ -5,9 +5,37 @@ import time
 import pandas as pd
 import tushare as ts
 
-import util.basic as tool
+import util.basic as basic
 
 pro = ts.pro_api()
+tool=basic.basic()
+
+
+# # 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于10%,换手率1.5%
+# t=f5(period=10,avg_up_times=7,total_mv=3000000000,turnover_rate=1.5,up_range=[0.01,0.1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 给定首尾时间，返回周期数
 # 给定周期，开始时间，返回结束日期
