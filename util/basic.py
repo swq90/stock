@@ -3,17 +3,16 @@ import numpy as np
 import pandas as pd
 import datetime
 import tushare as ts
-import matplotlib.pyplot as plt
-
+import util.stockfilter
 
 
 ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 
 # ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
-import stockfilter
+
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-NOTCONTAIN = stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
+NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
 
 PATH = os.getcwd()
 
@@ -252,7 +251,8 @@ class basic:
     def label(self, data, formula, up_pct=0.5):
         pass
 
-    def get_all_ma(self, data, ma=[1], is_abs=False, dis_pct=True):
+    def \
+            get_all_ma(self, data, ma=[1], is_abs=False, dis_pct=True):
         """
 
         :param data: dataframe 股票数据
@@ -324,12 +324,13 @@ class basic:
         tongji = tongji.apply(lambda x: 100 * x / len(data))
         return tongji.sort_index()
 
-    def up_info(self, data, days=5, up_range=0.5, pct=1, revise=1, limit=0):
+    def up_info(self, data, days=5, up_range=0.5,up_range_top=1, pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
         :param days: int 连续涨停天数
         :param up_range: float,days涨停下限
+        :param up_range_top:
         :return: datarame:data       [ts_code trade_date    high pre_n_date  pre_n_close  up_n_pct]
         """
         t1 = datetime.datetime.now()
@@ -344,10 +345,13 @@ class basic:
             data["up_pct"] = data["close"] / data["pre_%s_close" % days] - 1
         else:
             data["up_pct"] = data["high"] / data["pre_%s_close" % days] - 1
-        data.to_csv("woolpct.csv")
+        # data.to_csv("woolpct.csv")
+        if up_range:
+            data = data[data["up_pct"] >= up_range]
+        if up_range_top:
+            data = data[data["up_pct"] <= up_range_top]
 
-        data = data[data["up_pct"] >= up_range]
-        data.to_csv("woolup.csv")
+        # data.to_csv("woolup.csv")
         if revise:
             df = self.revise(data, days=days, rekeys="pre_%s_close", inplace=True)
             #
@@ -369,7 +373,8 @@ class basic:
             # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
             data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
         if pct:
-            data["up_n_pct"] = data["high"] / data["pre_n_close"] - 1
+            label="pre_n_close" if revise else "pre_%s_close" % days
+            data["up_n_pct"] = data["high"] / data[label] - 1
         print("up_data has done,it has %s items" % len(data))
         # data.to_csv("jjk.csv")
         # print("up 计算完成", datetime.datetime.now() - t1)

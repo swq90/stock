@@ -5,7 +5,7 @@ import tushare as ts
 
 ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
-TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
+TODAY = str(datetime.datetime.today().date()).replace("-", "")
 # NOTCONTAIN = stockfilter.StockFilter().stock_basic(TODAY, name="st|ST", market="科创板")
 
 # 满足给如一组基本信息，过滤

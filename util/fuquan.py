@@ -1,4 +1,4 @@
-
+import time
 import pandas as pd
 import tushare as ts
 # import util.basic as basic
@@ -50,10 +50,18 @@ def fuqan(data,adj='qfq'):
     res=pd.DataFrame()
     start_date=data['trade_date'].min()
     end_date=data['trade_date'].max()
+    i = 1
     for ts_code in data['ts_code'].unique():
         fcts = pro.adj_factor(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        i+=1
+        print(i)
+        # if i%500==0:
+        #    time.sleep(60)
+
         # print(fcts.shape[0],fcts.shape)
-        if fcts.shape[0] == 0:
+        if fcts.empty or fcts.shape[0] == 0 or len(fcts['adj_factor'].unique())==1:
+            res=res.append(data[data['ts_code']==ts_code],ignore_index=True)
+
             continue
         # print(fcts.info())
         df = data[data['ts_code']==ts_code].merge(fcts, on=['ts_code','trade_date'], how='left')
@@ -62,7 +70,9 @@ def fuqan(data,adj='qfq'):
         for col in PRICE_COLS:
             if adj == 'hfq':
                 if col=='vol':
-                    print('hfq补充')
+                    print('hfq没写要'
+                          ''
+                          '补充')
                 else:
                     df[col] = df[col] * df['adj_factor']
             if adj == 'qfq':
@@ -73,8 +83,8 @@ def fuqan(data,adj='qfq'):
             # df[col] = df[col].map(FORMAT)
             # df[col] = df[col].astype(float)
 
-        res=res.append(df,ignore_index=True)
-        print(res.index)
+        res=res.append(df.drop('adj_factor',axis=1),ignore_index=True)
+        # print(res.index)
 
 
     return res

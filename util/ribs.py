@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 import math
 import pandas as pd
-import stockfilter
+# import stockfilter
 
 import tushare as ts
 import util.basic as basic
@@ -14,17 +14,17 @@ import util.fuquan as fuquan
 # ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
 tool = basic.basic()
-ma = [1, 5]
+ma = [1, 5,10]
 period = 5
 up_cal = 240
-temp = 240
+temp = 10
 pre = 5
+days=1
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 new_dir='\\stockdata\\'+str(datetime.datetime.today().date())+'\\'
 path = os.getcwd() + new_dir
 # os.makedirs(new_dir)
 
-print(path)
 datelist=tool.tradeCal(cal=up_cal)
 if not os.path.isdir(path):
     os.makedirs(path)
@@ -54,6 +54,7 @@ else:
 print("基础数据")
 print(data['trade_date'].unique().shape)
 if os.path.isfile(path + 'score.csv'):
+
     score = pd.read_csv(path + 'score.csv', index_col=0, dtype=np.float64)
 else:
     score = sheep.grass(data[data['trade_date'].isin(datelist)==True])
@@ -129,7 +130,7 @@ if mv_bins:
             # stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
         df.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "-30-of-bins.csv")
 
-        stock = sheep.wool(df, data)
+        stock = sheep.wool(df, data,days=days)
 
         stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "pct-wool.csv")
         print(stock)
@@ -146,7 +147,7 @@ for i in top_n:
             df = pd.concat(
                 [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(i), df])
         df.to_csv(path+'sort_data_score.csv')
-        stock = sheep.wool(df, data)
+        stock = sheep.wool(df, data,days=days)
         stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
         print(i,stock)
 
