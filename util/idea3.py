@@ -9,7 +9,16 @@ import tushare as ts
 
 # import util.basic as basic
 import util.sheep as sheep
+
+df=ts.pro_bar(ma=[1,5,10],ts_code='000001.SZ', adj='qfq', start_date='20191001', end_date='20191231')
+
+
+
 pro=ts.pro_api()
+
+
+
+
 today=datetime.datetime.today().date()
 
 path_source=os.getcwd() +'\\stockdata\\'+str(today)+'\\'

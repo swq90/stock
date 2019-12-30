@@ -4,7 +4,7 @@ import tushare as ts
 # import util.basic as basic
 
 
-PRICE_COLS = ['open', 'close', 'high', 'low', 'pre_close','vol']
+PRICE_COLS = ['open', 'close', 'high', 'low','vol']
 FORMAT=lambda x: '%.4f' % x
 pro = ts.pro_api()
 
@@ -52,11 +52,13 @@ def fuqan(data,adj='qfq'):
     end_date=data['trade_date'].max()
     i = 1
     for ts_code in data['ts_code'].unique():
-        fcts = pro.adj_factor(ts_code=ts_code, start_date=start_date, end_date=end_date)
+        fcts = pro.adj_factor(ts_code=ts_code, start_date=start_date, end_date=end_date,retry_count = 20)
         i+=1
-        print(i)
-        # if i%500==0:
-        #    time.sleep(60)
+
+        if i%1000==0:
+
+            print(i)
+            time.sleep(60)
 
         # print(fcts.shape[0],fcts.shape)
         if fcts.empty or fcts.shape[0] == 0 or len(fcts['adj_factor'].unique())==1:
@@ -82,7 +84,7 @@ def fuqan(data,adj='qfq'):
                     df[col] = df[col] * df['adj_factor'] / float(fcts['adj_factor'][0])
             # df[col] = df[col].map(FORMAT)
             # df[col] = df[col].astype(float)
-
+        df['pre_close']=df['close'].shift(-1)
         res=res.append(df.drop('adj_factor',axis=1),ignore_index=True)
         # print(res.index)
 

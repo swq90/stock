@@ -16,7 +16,7 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 240
+up_cal = 500
 temp = 10
 pre = 5
 days=1
@@ -42,11 +42,11 @@ if os.path.isfile(path + 'data.csv'):
     # data['trade_date']=data['trade_date'].astype('str')
 else:
     data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
-    print('daily')
+    print('daily',data.shape)
     data=fuquan.fuqan(data)
-    print('fuquan')
+    print('fuquan',data.shape)
     data = data.merge(tool.get_all_ma(data, ma=ma, dis_pct=False), on=['ts_code', 'trade_date'])
-    print('ma')
+    print('ma',data.shape)
     # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
     data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
     data.to_csv(path + 'data.csv')

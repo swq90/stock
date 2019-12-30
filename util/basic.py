@@ -324,7 +324,8 @@ class basic:
         tongji = tongji.apply(lambda x: 100 * x / len(data))
         return tongji.sort_index()
 
-    def up_info(self, data, days=5, up_range=0.5,up_range_top=1, pct=1, revise=1, limit=0):
+    def \
+            up_info(self, data, days=5, up_range=0.5,up_range_top=1, pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
