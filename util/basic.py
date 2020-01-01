@@ -113,9 +113,7 @@ class basic:
             # query_times = 0
             for date in cal_list:
                 res = pd.concat([pro.daily(trade_date=date), res])
-                # query_times += 1
-                # if query_times % 190 == 0:
-                #     time.sleep(60)
+
         else:
             res = pro.daily(ts_code=ts_code, trade_date=trade_date, start_date=start_date, end_date=end_date)
 
@@ -324,8 +322,27 @@ class basic:
         tongji = tongji.apply(lambda x: 100 * x / len(data))
         return tongji.sort_index()
 
+    def pre_data(self,data,label=['trade_date','close'],new_label=[],pre_days=1):
+
+        if not new_label:
+            new_label=['pre_%s_%s'%(pre_days,x) for x in label]
+        if len(label)!=len(new_label):
+            print('列名输入有误')
+        data=data[set(['ts_code','trade_date']+label)]
+        res=pd.DataFrame()
+        for ts_code in data['ts_code'].unique():
+            df=data[data['ts_code']==ts_code].sort_values(by='trade_date',ascending=False)
+            for i in range(len(label)):
+                df[new_label[i]]=df[label[i]].shift(-pre_days)
+            res=pd.concat([df,res],ignore_index=True)
+
+        return res
+
+
+
+
     def \
-            up_info(self, data, days=5, up_range=0.5,up_range_top=1, pct=1, revise=1, limit=0):
+            up_2(self, data, days=5, up_range=0.5,up_range_top='', pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
@@ -349,7 +366,66 @@ class basic:
         # data.to_csv("woolpct.csv")
         if up_range:
             data = data[data["up_pct"] >= up_range]
-        if up_range_top:
+        if up_range_top!='':
+            data = data[data["up_pct"] <= up_range_top]
+
+        # data.to_csv("woolup.csv")
+        if revise:
+            df = self.revise(data, days=days, rekeys="pre_%s_close", inplace=True)
+            #
+            #
+            # del_rept_date = pd.DataFrame()
+            # for code in data["ts_code"].unique():
+            #
+            #     df = data[data["ts_code"] == code][
+            #         ["ts_code", "trade_date", "pre_%s_date" % days, "pre_%s_close" % days]].sort_values(by="trade_date",
+            #                                                                                         ascending=False).reset_index(
+            #         drop=True)
+            #     #
+            #     # i, j = 1, 0
+            #     #
+            #     # while len(df) > i:
+            #     #     i += 1
+            #     df= self.revise(df,days=days)
+            #     del_rept_date = pd.concat([df[df["ts_code"] != ""], del_rept_date])
+            # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
+            data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
+        if pct:
+            label="pre_n_close" if revise else "pre_%s_close" % days
+            data["up_n_pct"] = data["high"] / data[label] - 1
+        print("up_data has done,it has %s items" % len(data))
+        # data.to_csv("jjk.csv")
+        # print("up 计算完成", datetime.datetime.now() - t1)
+
+        return data
+
+
+    def \
+            up_info(self, data, days=5, up_range=0.5,up_range_top='', pct=1, revise=1, limit=0):
+        """
+        多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
+        :param data:
+        :param days: int 连续涨停天数
+        :param up_range: float,days涨停下限
+        :param up_range_top:
+        :return: datarame:data       [ts_code trade_date    high pre_n_date  pre_n_close  up_n_pct]
+        """
+        t1 = datetime.datetime.now()
+
+        data2 = data[["ts_code", "trade_date", "close"]]
+        data2.columns = ["ts_code", "pre_%s_date" % days, "pre_%s_close" % days]
+
+        pre_date = self.pre_date(data[["trade_date"]], days=days)
+        data = data.merge(pre_date, on="trade_date")
+        data = data.merge(data2, on=["ts_code", "pre_%s_date" % days])
+        if limit:
+            data["up_pct"] = data["close"] / data["pre_%s_close" % days] - 1
+        else:
+            data["up_pct"] = data["high"] / data["pre_%s_close" % days] - 1
+        # data.to_csv("woolpct.csv")
+        if up_range:
+            data = data[data["up_pct"] >= up_range]
+        if up_range_top!='':
             data = data[data["up_pct"] <= up_range_top]
 
         # data.to_csv("woolup.csv")

@@ -49,6 +49,7 @@ class StockFilter:
             res = res.append(df[["ts_code"]])
         res = res.drop_duplicates()
         print("共过滤掉数据", res.shape[0])
+
         return res["ts_code"]
 
     # 每日指标

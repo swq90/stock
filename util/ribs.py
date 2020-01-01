@@ -16,12 +16,14 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 500
+up_cal = 50
 temp = 10
 pre = 5
 days=1
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 new_dir='\\stockdata\\'+str(datetime.datetime.today().date())+'\\'
+# new_dir='\\stockdata\\'+str(datetime.datetime.today().date()-datetime.timedelta(365))+'\\'
+
 path = os.getcwd() + new_dir
 # os.makedirs(new_dir)
 
@@ -42,6 +44,7 @@ if os.path.isfile(path + 'data.csv'):
     # data['trade_date']=data['trade_date'].astype('str')
 else:
     data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
+    # data = tool.trade_daily(start_date = '20180103', end_date = "20181231").reset_index(drop=True)
     print('daily',data.shape)
     data=fuquan.fuqan(data)
     print('fuquan',data.shape)
@@ -97,7 +100,7 @@ run_time = datetime.datetime.today()
 #     stock_score = marks(stock_label,score)
 #     stock_score.to_csv(path + 'stock-score.csv')
 
-stock_marks = stock_marks[stock_marks['score'] >= 10]
+stock_mark = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_marks.shape)
 stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
@@ -108,20 +111,20 @@ stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close']
 
 # print(stock_need.info())
 # print(stock_marks.info())
-stock_marks = stock_marks.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
 # print('marks2', stock_marks.shape)
 
 # data_m = data[((data["low"] == data["high"])) == False]
 # stock_marks[['ts_code', 'trade_date', 'score']].to_csv(path + '50ofall.csv')
 # 保存当天前五十
-print('marks3', stock_marks.shape)
+print('marks3', stock_mark.shape)
 mv_bins = []
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
 if mv_bins:
     for i in range(len(mv_bins) - 1):
         CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
         print('市值',(mv_bins[i], mv_bins[i + 1]))
-        stock_data1 = stock_marks.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+        stock_data1 = stock_mark.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
         df = pd.DataFrame()
         for day in stock_data1['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
@@ -133,22 +136,23 @@ if mv_bins:
         stock = sheep.wool(df, data,days=days)
 
         stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "pct-wool.csv")
-        print(stock)
+        # print(stock)
 
 
 
 #所有股票排名回溯
-df = pd.DataFrame()
 top_n=[50]
 for i in top_n:
-    if df.empty:
+    for switch in [True,False]:
+        df = pd.DataFrame()
+        stock_marks=stock_marks[stock_marks['trade_date']>='20190101']
         for day in stock_marks['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
             df = pd.concat(
-                [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=False).head(i), df])
-        df.to_csv(path+'sort_data_score.csv')
+                [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
+        df.to_csv(path+'sort_data_score%s%s.csv'%(i,switch))
         stock = sheep.wool(df, data,days=days)
-        stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
+        stock.to_csv(path + "all-pct-wool-head%s%s.csv"%(i,switch))
         print(i,stock)
 
 
