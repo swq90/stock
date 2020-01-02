@@ -14,37 +14,17 @@ import tushare as ts
 #
 #
 # # ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
+
+import util.basic as basic
 z=pd.date_range(start='20191202',end='20191230')
 
 
 pro = ts.pro_api()
-# tool = basic.basic()
+tool = basic.basic()
 # data=pro.daily(ts_code='002943.SH')
-stock_filter=pro.namechange()
-stock_filter=stock_filter[stock_filter['name'].str.contains('ST|退') == True]
-# stock_filter['end_date'].fillna(str(datetime.datetime.today()+datetime.timedelta(2)).replace('-',''))
-stock_filter['end_date']=stock_filter['end_date'].fillna(str(datetime.datetime.today()+datetime.timedelta(2)).replace('-','')[:8])
-print(stock_filter.shape)
-print(type(stock_filter.iloc[0]['start_date']))
-# print(stock_filter.loc[11])
-# print(stock_filter.iloc[11])
-
-
-res=pd.DataFrame()
-for i in range(stock_filter.shape[0]):
-    df=pd.DataFrame()
-    source=stock_filter.iloc[i]
-    print(source)
-    df['trade_date']=pd.date_range(start=source['start_date'],end=source['end_date'])
-    df['trade_date2']=pd.to_datetime(df['trade_date'])
-    df['ts_code']=source['ts_code']
-    df['name']=source['name']
-    print(type(df.iloc[0]['trade_date2']))
-    res=pd.concat([df,res],ignore_index=True)
-
-data=pd.DataFrame()
-
-stock_filter.to_csv('namechange2.csv',encoding='utf_8_sig')
+z=tool.history_name()
+z.loc['info']=['st','a','b',1,2,3]
+print(z)
 today=datetime.datetime.today().date()
 
 path = 'D:\\workgit\\stock\\util\\stockdata\\'

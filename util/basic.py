@@ -517,3 +517,40 @@ class basic:
 
             data.to_csv(full_name)
             print("has saved file : ")
+
+
+    def history_name(self,keyword='ST|退',start_date='',end_date=''):
+
+        '''
+        股票曾用名中，包含指定关键字的股票信息
+        :param keyword:需要查找的关键字，或|，
+        :param start_date: 查询的开始时间
+        :param end_date: 查询的结束日期
+        :return: 要顾虑的历史曾用名数据
+        '''
+        # 判断是有缓存文件存在
+        res = pd.DataFrame()
+        data = pro.namechange()
+        print(data.shape)
+        data = data[data['name'].str.contains(keyword) == True]
+
+        return data
+        # data.to_csv('namechange2.csv', encoding='utf_8_sig')
+
+
+        data['end_date'] = data['end_date'].fillna(
+            datetime.datetime.today().strftime('%Y%m%d'))
+
+        for i in range(data.shape[0]):
+            df = pd.DataFrame()
+            source = data.iloc[i]
+            df['trade_date'] = pd.date_range(start=source['start_date'], end=source['end_date'])
+            df['trade_date'] = df['trade_date'].astype(str).apply(lambda x: x.replace('-', ''))
+            df['ts_code'] = source['ts_code']
+            df['name'] = source['name']
+
+            res = pd.concat([df, res], ignore_index=True)
+        print(res['name'].unique().shape)
+        # res.to_csv('namechange2.csv', encoding='utf_8_sig')
+        print(res.shape)
+        return res

@@ -143,16 +143,16 @@ if mv_bins:
 #所有股票排名回溯
 top_n=[50]
 for i in top_n:
-    for switch in [True,False]:
+    for switch in [False]:
         df = pd.DataFrame()
         stock_marks=stock_marks[stock_marks['trade_date']>='20190101']
         for day in stock_marks['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
             df = pd.concat(
                 [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
-        df.to_csv(path+'sort_data_score%s%s.csv'%(i,switch))
+        df.to_csv(path+'sort_data_score%s.csv'%i)
         stock = sheep.wool(df, data,days=days)
-        stock.to_csv(path + "all-pct-wool-head%s%s.csv"%(i,switch))
+        stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
         print(i,stock)
 
 
