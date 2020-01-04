@@ -16,15 +16,16 @@ import tushare as ts
 # # ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 
 import util.basic as basic
-z=pd.date_range(start='20191202',end='20191230')
+# z=pd.date_range(start='20191202',end='20191230')
 
 
 pro = ts.pro_api()
 tool = basic.basic()
 # data=pro.daily(ts_code='002943.SH')
 z=tool.history_name()
-z.loc['info']=['st','a','b',1,2,3]
-print(z)
+print(z.info())
+# z.loc['info']=['st','a','b',1,2,3]
+# print(z)
 today=datetime.datetime.today().date()
 
 path = 'D:\\workgit\\stock\\util\\stockdata\\'

@@ -5,14 +5,13 @@ import datetime
 import tushare as ts
 import util.stockfilter
 
+# ts.set_token()
 
-ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
-
-# ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
 
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
+# NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
+NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY,  market="科创板")
 
 PATH = os.getcwd()
 
@@ -49,7 +48,7 @@ class basic:
         # if not CAL or start_date<CAL[0] or end_date>CAL[-1]:
         # start_date 为空总是小于，总是走入,暂时不管/、
 
-        if not CAL or end_date > CAL[-1] :
+        if not CAL or end_date > CAL[-1]:
             # today = datetime.datetime.today().date()
             # today = str(today)[0:10]
             #
@@ -78,7 +77,7 @@ class basic:
         if period:
             if start_date:
                 loc = CAL.index(start_date)
-                if loc+period<len(CAL):
+                if loc + period < len(CAL):
                     return (start_date, CAL[loc + period])
                 else:
                     return (start_date, '')
@@ -118,6 +117,7 @@ class basic:
             res = pro.daily(ts_code=ts_code, trade_date=trade_date, start_date=start_date, end_date=end_date)
 
         return res[res["ts_code"].isin(NOTCONTAIN) == False]
+        return res
 
     # def ma(self, data, ma=5):
     #
@@ -163,18 +163,17 @@ class basic:
                         -(i - 1))
                     data["ma%s" % i] = data["ma%s" % i].astype(float)
 
-        return data[list(set(list(data)).difference(('amount','vol')))]
-
+        return data[list(set(list(data)).difference(('amount', 'vol')))]
 
     def pre_date(self, date_list, days=1):
         global CAL
         res = pd.DataFrame()
         date_list = date_list.iloc[:, [0]].drop_duplicates()
         date_list.columns = ["trade_date"]
-        date_list=date_list.sort_values(by='trade_date')
+        date_list = date_list.sort_values(by='trade_date')
         if not CAL:
-            CAL=pro.trade_cal(end_date=date_list.iloc[-1]['trade_date'], is_open=1)["cal_date"].sort_values().tolist()
-        if days>0:
+            CAL = pro.trade_cal(end_date=date_list.iloc[-1]['trade_date'], is_open=1)["cal_date"].sort_values().tolist()
+        if days > 0:
             for i in date_list["trade_date"]:
                 day = [self.tradeCal(end_date=i, period=days)]
 
@@ -185,7 +184,7 @@ class basic:
                 day = [self.tradeCal(start_date=i, period=-days)]
 
                 res = pd.concat([res, pd.DataFrame(day)])
-            res.columns = ["trade_date","pre_%s_date" % days]
+            res.columns = ["trade_date", "pre_%s_date" % days]
         return res
 
     def pre_label(self, data, label, days=1):
@@ -201,9 +200,8 @@ class basic:
         data_pre.rename(columns={'trade_date': 'pre_%s_date' % days, label: 'pre_%s_' % days + label}, inplace=True)
 
         data = data.merge(pre_day, on='trade_date')
-        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days],how='left')
+        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days], how='left')
         return data
-
 
     def pre_label2(self, data, labels, days=1):
 
@@ -218,9 +216,8 @@ class basic:
         data_pre.rename(columns={'trade_date': 'pre_%s_date' % days, labels: 'pre_%s_' % days + labels}, inplace=True)
 
         data = data.merge(pre_day, on='trade_date')
-        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days],how='left')
+        data = data.merge(data_pre, on=['ts_code', 'pre_%s_date' % days], how='left')
         return data
-
 
     def list_days(self, data, list_days=20):
         """
@@ -249,8 +246,7 @@ class basic:
     def label(self, data, formula, up_pct=0.5):
         pass
 
-    def \
-            get_all_ma(self, data, ma=[1], is_abs=False, dis_pct=True):
+    def get_all_ma(self, data, ma=[1], is_abs=False, dis_pct=True):
         """
 
         :param data: dataframe 股票数据
@@ -270,7 +266,7 @@ class basic:
             dm = self.ma(dm, ma=ma)
             # print('ma',list(dm))
 
-            res = pd.concat([dm, res],ignore_index=False)
+            res = pd.concat([dm, res], ignore_index=False)
             count += 1
             # print("%s ma 计算完成" % i, datetime.datetime.now() - t1, count)
 
@@ -322,27 +318,24 @@ class basic:
         tongji = tongji.apply(lambda x: 100 * x / len(data))
         return tongji.sort_index()
 
-    def pre_data(self,data,label=['trade_date','close'],new_label=[],pre_days=1):
+    def pre_data(self, data, label=['trade_date', 'close'], new_label=[], pre_days=1):
 
         if not new_label:
-            new_label=['pre_%s_%s'%(pre_days,x) for x in label]
-        if len(label)!=len(new_label):
+            new_label = ['pre_%s_%s' % (pre_days, x) for x in label]
+        if len(label) != len(new_label):
             print('列名输入有误')
-        data=data[set(['ts_code','trade_date']+label)]
-        res=pd.DataFrame()
+        data = data[set(['ts_code', 'trade_date'] + label)]
+        res = pd.DataFrame()
         for ts_code in data['ts_code'].unique():
-            df=data[data['ts_code']==ts_code].sort_values(by='trade_date',ascending=False)
+            df = data[data['ts_code'] == ts_code].sort_values(by='trade_date', ascending=False)
             for i in range(len(label)):
-                df[new_label[i]]=df[label[i]].shift(-pre_days)
-            res=pd.concat([df,res],ignore_index=True)
+                df[new_label[i]] = df[label[i]].shift(-pre_days)
+            res = pd.concat([df, res], ignore_index=True)
 
         return res
 
-
-
-
     def \
-            up_2(self, data, days=5, up_range=0.5,up_range_top='', pct=1, revise=1, limit=0):
+            up_2(self, data, days=5, up_range=0.5, up_range_top='', pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
@@ -366,7 +359,7 @@ class basic:
         # data.to_csv("woolpct.csv")
         if up_range:
             data = data[data["up_pct"] >= up_range]
-        if up_range_top!='':
+        if up_range_top != '':
             data = data[data["up_pct"] <= up_range_top]
 
         # data.to_csv("woolup.csv")
@@ -391,7 +384,7 @@ class basic:
             # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
             data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
         if pct:
-            label="pre_n_close" if revise else "pre_%s_close" % days
+            label = "pre_n_close" if revise else "pre_%s_close" % days
             data["up_n_pct"] = data["high"] / data[label] - 1
         print("up_data has done,it has %s items" % len(data))
         # data.to_csv("jjk.csv")
@@ -399,9 +392,8 @@ class basic:
 
         return data
 
-
     def \
-            up_info(self, data, days=5, up_range=0.5,up_range_top='', pct=1, revise=1, limit=0):
+            up_info(self, data, days=5, up_range=0.5, up_range_top='', pct=1, revise=1, limit=0):
         """
         多日涨停股票，日期重叠要合并日期区间后得到涨停大于等于days的股票
         :param data:
@@ -425,7 +417,7 @@ class basic:
         # data.to_csv("woolpct.csv")
         if up_range:
             data = data[data["up_pct"] >= up_range]
-        if up_range_top!='':
+        if up_range_top != '':
             data = data[data["up_pct"] <= up_range_top]
 
         # data.to_csv("woolup.csv")
@@ -450,7 +442,7 @@ class basic:
             # del_rept_date.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
             data = data[['ts_code', 'trade_date', 'high']].merge(df, on=["ts_code", "trade_date"])
         if pct:
-            label="pre_n_close" if revise else "pre_%s_close" % days
+            label = "pre_n_close" if revise else "pre_%s_close" % days
             data["up_n_pct"] = data["high"] / data[label] - 1
         print("up_data has done,it has %s items" % len(data))
         # data.to_csv("jjk.csv")
@@ -518,8 +510,7 @@ class basic:
             data.to_csv(full_name)
             print("has saved file : ")
 
-
-    def history_name(self,keyword='ST|退',start_date='',end_date=''):
+    def history_name(self, keyword='ST|退', start_date='', end_date=''):
 
         '''
         股票曾用名中，包含指定关键字的股票信息
@@ -534,9 +525,7 @@ class basic:
         print(data.shape)
         data = data[data['name'].str.contains(keyword) == True]
 
-        return data
         # data.to_csv('namechange2.csv', encoding='utf_8_sig')
-
 
         data['end_date'] = data['end_date'].fillna(
             datetime.datetime.today().strftime('%Y%m%d'))
@@ -554,3 +543,20 @@ class basic:
         # res.to_csv('namechange2.csv', encoding='utf_8_sig')
         print(res.shape)
         return res
+
+
+    def up_times(self,data,period=10,up_period=7,label=['ma1'],low=0):
+        def func(df,low=low):
+            return len(df[df>low])
+        data=data[['ts_code','trade_date']+label].sort_values(by='trade_date')
+        for i in label:
+            data['%s_up'%i]=data[i].diff()
+            data['%s_%s_uptimes'%(i,period)] = data.groupby('ts_code')['%s_up' % i].rolling(period, min_periods=up_period).apply(func, raw=True)
+
+        return data
+        # for ts_code in data['ts_code'].unique():
+        #     df = data[data['ts_code'] == ts_code].sort_values(by='trade_date', ascending=False)
+        #     for i in label:
+        #         df['%s_up'%i]=df[i].diff(-period)
+        #
+

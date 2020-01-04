@@ -3,7 +3,6 @@ import datetime
 import numpy as np
 import math
 import pandas as pd
-# import stockfilter
 
 import tushare as ts
 import util.basic as basic
@@ -119,12 +118,16 @@ stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_cod
 # 保存当天前五十
 print('marks3', stock_mark.shape)
 mv_bins = []
+history_name=tool.history_name()
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
 if mv_bins:
     for i in range(len(mv_bins) - 1):
         CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
         print('市值',(mv_bins[i], mv_bins[i + 1]))
         stock_data1 = stock_mark.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+        stock_data1=stock_data1.merge(history_name,on=['ts_code', 'trade_date'],how='left')
+        stock_data1=stock_data1[stock_data1['name'].isna()]
+        stock_data1.drop(columns='name',inplace=True)
         df = pd.DataFrame()
         for day in stock_data1['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
@@ -145,7 +148,10 @@ top_n=[50]
 for i in top_n:
     for switch in [False]:
         df = pd.DataFrame()
-        stock_marks=stock_marks[stock_marks['trade_date']>='20190101']
+        # stock_marks=stock_marks[stock_marks['trade_date']>='20190101']
+        stock_marks=stock_marks.merge(history_name,on=['ts_code', 'trade_date'],how='left')
+        stock_marks=stock_marks[stock_marks['name'].isna()]
+        stock_marks.drop(columns='name',inplace=True)
         for day in stock_marks['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
             df = pd.concat(
