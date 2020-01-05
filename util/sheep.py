@@ -84,74 +84,68 @@ def grass(data,period=5,up_cal = 240):
     # print('uppre', up_pre.shape)
     # up_pre.to_csv(filename + 'up_pre%s.csv' % label)
     for label in labels:
-        up_pre = pd.DataFrame(up_pre.groupby(by='count').size(), columns=['count_%s' % label])
-        up_pre['pct'] = up_pre['count_%s' % label] / up_pre['count_%s' % label].sum()
-        df = pd.DataFrame(df.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
-        df['pct'] = df['count_%s' % label] / df['count_%s' % label].sum()
+        up_pct = pd.DataFrame(up_pre.groupby(by='count_%s'%label).size(), columns=['count_%s' % label])
+        up_pct['pct'] = up_pct['count_%s' % label] / up_pct['count_%s' % label].sum()
+        df_pct = pd.DataFrame(df.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
+        df_pct['pct'] = df_pct['count_%s' % label] / df_pct['count_%s' % label].sum()
+        #
+        print('up:%s>pre_%s' % (label, label), up_pct)
+        print('all:%s>pre_%s' % (label, label), df_pct)
+        up_pct.rename(columns={'pct': 'up_pct'}, inplace=True)
+        df_pct.rename(columns={'pct': 'all_pct'}, inplace=True)
+        g = up_pct[['up_pct']].merge(df_pct[['all_pct']], left_index=True, right_index=True)
+        # g['div'] = g['up_pct'] / g['all_pct']
+        g['div'] = g['up_pct'] / g['all_pct']-1
+        #
+        # g['%sscore' % label] = g.apply(lambda x: 10 * x['div'], axis=1) / g['div'].sum()
+        g['%sscore' % label] = (g['div'].max()//0.5+5)*g['div'] / g['div'].max()
 
-        print('up:%s>pre_%s' % (label, label), up_pre)
-        print('all:%s>pre_%s' % (label, label), df)
-        up_pre.rename(columns={'pct': 'up_pct'}, inplace=True)
-        df.rename(columns={'pct': 'all_pct'}, inplace=True)
-        g = up_pre[['up_pct']].merge(df[['all_pct']], left_index=True, right_index=True)
-        g['div'] = g['up_pct'] / g['all_pct']
-        g['%sscore' % label] = g.apply(lambda x: 10 * x['div'], axis=1) / g['div'].sum()
+
         print(g)
-    if score.empty:
-        score = g[['%sscore' % label]]
-    else:
-        score = score.merge(g[['%sscore' % label]], left_index=True, right_index=True)
+        if score.empty:
+            score = g[['%sscore' % label]]
+        else:
+            score = score.merge(g[['%sscore' % label]], left_index=True, right_index=True)
     return score
 
 
 def sheep(data,pre=5):
     res = pd.DataFrame()
     for label in labels:
-        df = data[['ts_code', 'trade_date', label]]
+        df = data[['ts_code', 'trade_date', label]].copy()
         # df['count_%s' % label] = 0
-        for i in range(1, pre + 1):
-            df = tool.pre_label(df, label=label, days=i)
+        if label == 'low_ma5':
+            df.sort_values(by='trade_date',inplace=True)
+            z=df.groupby('ts_code')[label].rolling(pre).sum()
+            z.index=z.index.droplevel()
+            z = pd.DataFrame(z)
+            z.rename(columns={label: 'count_%s' % label}, inplace=True)
 
-            if label == 'low_ma5':
-                if i == 1:
-                    df['count_%s' % label] = df[label]
-                else:
-                    df['count_%s' % label] = df.apply(
-                        lambda x: x['count_%s' % label] + x['pre_%s_%s' % (i, label)], axis=1)
-                # df['count_%s'%label]=df['count_%s'%label].astype('int')
-
-            # else:
+            df=df.join(z)
+        else:
+            df=tool.up_times(df,period=5,label=label)
+            # df=df = tool.pre_label(df, label=label, days=pre)
+            # for i in range(1, pre + 1):
+            #     df = tool.pre_label(df, label=label, days=i)
             #     if i == 1:
             #         df['count_%s' % label] = df.apply(
-            #             lambda x: 1 + x['count_%s' % label] if x[label] >= x['pre_%s_%s' % (i, label)] else x[
-            #                 'count_%s' % label], axis=1)
+            #             lambda x: 1 if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
             #
             #     else:
             #         df['count_%s' % label] = df.apply(
             #             lambda x: 1 + x['count_%s' % label] if x['pre_%s_%s' % ((i - 1), label)] >= x[
             #                 'pre_%s_%s' % (i, label)] else x[
             #                 'count_%s' % label], axis=1)
-            else:
-                if i == 1:
-                    df['count_%s' % label] = df.apply(
-                        lambda x: 1 if x[label] >= x['pre_%s_%s' % (i, label)] else 0, axis=1)
-
-                else:
-                    df['count_%s' % label] = df.apply(
-                        lambda x: 1 + x['count_%s' % label] if x['pre_%s_%s' % ((i - 1), label)] >= x[
-                            'pre_%s_%s' % (i, label)] else x[
-                            'count_%s' % label], axis=1)
             # print('df', df.shape)
-        # df.to_csv(filename + 'all%s.csv' % label)
+
         df = df.dropna()
 
         if res.empty:
             res = df[['ts_code', 'trade_date', 'count_%s' % label]]
         else:
             res = res.merge(df[['ts_code', 'trade_date', 'count_%s' % label]], on=['ts_code', 'trade_date'])
-    print(res.shape)
+        res.loc[:,'count_%s' % label]=res['count_%s' % label].astype('int')
     res = res.dropna()
-    res['count_low_ma5'] = res['count_%s' % label].astype('int')
 
     return res
 
@@ -160,7 +154,8 @@ def marks(data, score,labels=labels):
     df = pd.DataFrame()
     data['score'] = 0
     for label in labels:
-        data['score'] = data.apply(lambda x: x['score'] + score.iloc[x['count_%s' % label]]['%sscore' % label], axis=1)
+
+        data['score'] = data.apply(lambda x: x['score'] + score.loc[x['count_%s' % label]]['%sscore' % label], axis=1)
     # for day in data['trade_date'].unique():
     #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='trade_date', ascending=False).head(50), df])
     # #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])

@@ -11,7 +11,7 @@ pro = ts.pro_api()
 
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
 # NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
-NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY,  market="科创板")
+NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, market="科创板")
 
 PATH = os.getcwd()
 
@@ -226,19 +226,31 @@ class basic:
         :param list_days:int 上市天数需要大于list_days
         :return:data[["ts_code", "trade_date", "list_days"]],list_days 当前交易日该股票已经上市天数
         """
+        data=data[['ts_code','trade_date']]
         if not isinstance(data, pd.DataFrame):
             print("must be dataframe")
             return
-        stock_basic = pro.stock_basic()[['ts_code', 'list_date']]
-
+        stock_basic=pd.DataFrame()
+        for status in list('LDP'):
+            df=pro.stock_basic(list_status=status,fields='ts_code,list_date,list_status')
+            stock_basic = pd.concat([df,stock_basic],ignore_index=True)
+            print(stock_basic.shape)
+        # [['ts_code', 'list_date','list_status']]
+        print(stock_basic['list_status'].unique())
         data = data.merge(stock_basic, on="ts_code")
         # data["days"] = data.apply(lambda x: (datetime.date(int(x["trade_date"][:4]), int(x["trade_date"][4:6]),
         #                                                    int(x["trade_date"][6:])) - datetime.date(
         #     int(x["list_date"][:4]), int(x["list_date"][4:6]), int(x["list_date"][6:]))).days, axis=1)
         # days为上市日期到交易日期之间的交易日天数
-        # data["list_days"] = data.apply(
-        #     lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
+        data["list_days"] = data.apply(
+            lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
         return data[data["list_days"] >= list_days][["ts_code", "trade_date"]]
+    def days(self,start_date,end_date=''):
+        start_date = datetime.datetime.strptime(start_date, '%Y%m%d')
+        if not end_date:
+            end_date=datetime.datetime.today()
+        return (end_date-start_date).days
+
 
     def avg_up_info(self, data, days):
         pass
@@ -544,19 +556,20 @@ class basic:
         print(res.shape)
         return res
 
+    def up_times(self, data, period=10, up_period=1, label='ma1', low=0):
+        def func(df, low=low):
+            return len(df[df >=low])
 
-    def up_times(self,data,period=10,up_period=7,label=['ma1'],low=0):
-        def func(df,low=low):
-            return len(df[df>low])
-        data=data[['ts_code','trade_date']+label].sort_values(by='trade_date')
-        for i in label:
-            data['%s_up'%i]=data[i].diff()
-            data['%s_%s_uptimes'%(i,period)] = data.groupby('ts_code')['%s_up' % i].rolling(period, min_periods=up_period).apply(func, raw=True)
+        data = data[['ts_code', 'trade_date'] + [label]].sort_values(by='trade_date')
+
+        data['%s_up' % label] = data.groupby('ts_code')[label].diff()
+
+        count_times = data.groupby('ts_code')['%s_up' % label].rolling(period, min_periods=up_period).apply(func,
+                                                                                                            raw=True)
+        count_times.index = count_times.index.droplevel()
+        count_times=pd.DataFrame(count_times)
+        count_times.rename(columns={'%s_up' % label: 'count_%s' % label}, inplace=True)
+        # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_period]
+        data = data.join(count_times)
 
         return data
-        # for ts_code in data['ts_code'].unique():
-        #     df = data[data['ts_code'] == ts_code].sort_values(by='trade_date', ascending=False)
-        #     for i in label:
-        #         df['%s_up'%i]=df[i].diff(-period)
-        #
-

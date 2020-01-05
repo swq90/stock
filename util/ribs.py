@@ -15,7 +15,7 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 50
+up_cal = 250
 temp = 10
 pre = 5
 days=1
@@ -52,17 +52,23 @@ else:
     # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
     data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
     data.to_csv(path + 'data.csv')
-
-print("基础数据")
+print(data.shape)
+# data=data.merge(tool.list_days(data,list_days=30))
+print(data.shape)
+print("基础数据",data.shape)
 print(data['trade_date'].unique().shape)
 if os.path.isfile(path + 'score.csv'):
 
-    score = pd.read_csv(path + 'score.csv', index_col=0, dtype=np.float64)
+    score = pd.read_csv(path + 'score.csv', index_col=0)
 else:
     score = sheep.grass(data[data['trade_date'].isin(datelist)==True])
+
+    # score = sheep.grass(data.head(90000))
+    score.reset_index(drop=True,inplace=True)
     score.to_csv(path + 'score.csv')
 #     调用方法获得得分表
 print('对应分数')
+print(score.info())
 data=data[data['trade_date'].isin(datelist)==True]
 # print(data['trade_date'].unique().shape)
 
@@ -73,6 +79,7 @@ else:
     # stock_label =stock_label[stock_label['trade_date'].isin(datelist)==True]
     stock_label.to_csv(path + 'stock-label.csv')
 print('各项满足情况')
+# print(stock_label.info())
 
 if os.path.isfile(path + 'stock_marks.csv'):
     stock_marks = pd.read_csv(path + 'stock_marks.csv', index_col=0, dtype={'trade_date': object})
@@ -100,7 +107,7 @@ run_time = datetime.datetime.today()
 #     stock_score.to_csv(path + 'stock-score.csv')
 
 stock_mark = stock_marks[stock_marks['score'] >= 10]
-print('marks1', stock_marks.shape)
+print('marks1', stock_mark.shape)
 stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
 # print( stock_need.shape)
@@ -111,12 +118,8 @@ stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close']
 # print(stock_need.info())
 # print(stock_marks.info())
 stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
-# print('marks2', stock_marks.shape)
 
-# data_m = data[((data["low"] == data["high"])) == False]
-# stock_marks[['ts_code', 'trade_date', 'score']].to_csv(path + '50ofall.csv')
-# 保存当天前五十
-print('marks3', stock_mark.shape)
+
 mv_bins = []
 history_name=tool.history_name()
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
@@ -148,14 +151,13 @@ top_n=[50]
 for i in top_n:
     for switch in [False]:
         df = pd.DataFrame()
-        # stock_marks=stock_marks[stock_marks['trade_date']>='20190101']
-        stock_marks=stock_marks.merge(history_name,on=['ts_code', 'trade_date'],how='left')
-        stock_marks=stock_marks[stock_marks['name'].isna()]
-        stock_marks.drop(columns='name',inplace=True)
-        for day in stock_marks['trade_date'].unique():
+        stock_mark=stock_mark.merge(history_name,on=['ts_code', 'trade_date'],how='left')
+        stock_mark=stock_mark[stock_mark['name'].isna()]
+        stock_mark.drop(columns='name',inplace=True)
+        for day in stock_mark['trade_date'].unique():
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
             df = pd.concat(
-                [stock_marks[stock_marks['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
+                [stock_mark[stock_mark['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
         df.to_csv(path+'sort_data_score%s.csv'%i)
         stock = sheep.wool(df, data,days=days)
         stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
