@@ -242,13 +242,16 @@ class basic:
         #                                                    int(x["trade_date"][6:])) - datetime.date(
         #     int(x["list_date"][:4]), int(x["list_date"][4:6]), int(x["list_date"][6:]))).days, axis=1)
         # days为上市日期到交易日期之间的交易日天数
+        # data["list_days"] = data.apply(
+        #     lambda x: self.days(start_date=x['list_date'], end_date=x['trade_date'], axis=1))
         data["list_days"] = data.apply(
-            lambda x: self.tradeCal(start_date=x["list_date"], end_date=x["trade_date"], axis=1))
+            lambda x: self.days(x['list_date'],end_date=x['trade_date']), axis=1)
+
         return data[data["list_days"] >= list_days][["ts_code", "trade_date"]]
     def days(self,start_date,end_date=''):
+        end_date=datetime.datetime.strptime(end_date, '%Y%m%d') if end_date else datetime.datetime.today()
         start_date = datetime.datetime.strptime(start_date, '%Y%m%d')
-        if not end_date:
-            end_date=datetime.datetime.today()
+        # print(start_date,end_date,(end_date-start_date).days)
         return (end_date-start_date).days
 
 
@@ -534,27 +537,22 @@ class basic:
         # 判断是有缓存文件存在
         res = pd.DataFrame()
         data = pro.namechange()
-        print(data.shape)
         data = data[data['name'].str.contains(keyword) == True]
-
-        # data.to_csv('namechange2.csv', encoding='utf_8_sig')
-
         data['end_date'] = data['end_date'].fillna(
             datetime.datetime.today().strftime('%Y%m%d'))
-
         for i in range(data.shape[0]):
             df = pd.DataFrame()
             source = data.iloc[i]
-            df['trade_date'] = pd.date_range(start=source['start_date'], end=source['end_date'])
+            start_date = start_date if start_date else source['start_date']
+            end_date = end_date if end_date else source['end_date']
+            df['trade_date'] = pd.date_range(start=start_date, end=end_date)
             df['trade_date'] = df['trade_date'].astype(str).apply(lambda x: x.replace('-', ''))
             df['ts_code'] = source['ts_code']
             df['name'] = source['name']
 
             res = pd.concat([df, res], ignore_index=True)
-        print(res['name'].unique().shape)
-        # res.to_csv('namechange2.csv', encoding='utf_8_sig')
-        print(res.shape)
-        return res
+
+        return res.drop(columns='name').drop_duplicates()
 
     def up_times(self, data, period=10, up_period=1, label='ma1', low=0):
         def func(df, low=low):

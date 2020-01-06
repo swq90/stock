@@ -22,13 +22,18 @@ labels = ['low_ma5', 'low', 'ma1', 'ma5']
 
 
 
-def grass(data,period=5,up_cal = 240):
+def grass(data,period=5,up_cal = 240,items=0):
     # up 满足上涨条件的数据
-    df = sheep(data)
     score = pd.DataFrame()
+    df = sheep(data)
+
     up = tool.up_info(data, days=period, up_range=0.5, pct=0)
     # print('up', up.shape)
-    up = up[up["trade_date"].isin(tool.tradeCal(cal=up_cal))]
+
+    if up_cal & (not items):
+        up = up[up["trade_date"].isin(tool.tradeCal(cal=up_cal))]
+    elif items:
+        up=up.sort_values('trade_date',ascending=False).head(items)
     # print('up', up.shape)
 
     # for label in labels:
@@ -75,7 +80,7 @@ def grass(data,period=5,up_cal = 240):
     up_pre = up[['ts_code', 'pre_n_date']]
     up_pre.rename(columns={'pre_n_date': 'trade_date'}, inplace=True)
     up_pre = up_pre.merge(df, on=['ts_code', 'trade_date'])
-    df = df[df["trade_date"].isin(tool.tradeCal(cal=up_cal))]
+    df = df[df["trade_date"]>=up_pre['trade_date'].min()]
 
     # up_pre_score=up_pre.groupby(by=)
 
@@ -169,9 +174,6 @@ def marks(data, score,labels=labels):
 
 
 def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
-    # data_buy = data[((data["low"] == data["high"])) == False]
-
-
 
     limit_up = stock[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
     # for trade_date in  data["trade_date"].unique():
@@ -205,9 +207,33 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
     sell_cut['all_pct'] = sell_cut['pct'].cumprod()
     # sell_cut.to_csv('pctwool2.csv')
     # print(sell_cut)
+
     return sell_cut
 
+def wool2(stock_list,data,days= 1,PRICEB = "close",PRICES = "close"):
+    limit_up = stock_list[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
+    # for trade_date in  data["trade_date"].unique():
+    #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
+    #     h=z[z["pct_chg"]>=10]
+    #     d=limit_up[limit_up["trade_date"]==trade_date]
+    # print(limit_up)
 
+    df = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
+        ['ts_code', 'trade_date', PRICEB]]
+    df.rename(columns={PRICEB:'buy_price'},inplace=True)
+    df=df.merge(tool.pre_data(data[['ts_code', 'trade_date', PRICEB]],label=[PRICEB],days=-1,new_label=['sell_price']))
+
+    print('每日平均买入量', df.groupby(by='trade_date')['ts_code'].size().mean())
+
+    df['pct'] = (df['sell_price'] / df['buy_price'])
+    sell_cut = pd.DataFrame()
+    sell_cut['pct'] = df.groupby(by='trade_date')['pct'].mean()
+    sell_cut['n'] = df.groupby(by='trade_date')['trade_date'].size()
+
+    # sell_cut = pd.DataFrame(sell_cut)
+    sell_cut['all_pct'] = sell_cut['pct'].cumprod()
+
+    return sell_cut
 # # score=pd.DataFrame()
 #
 # path = os.getcwd() + '\\data\\'

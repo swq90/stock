@@ -51,8 +51,13 @@ else:
     print('ma',data.shape)
     # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除
     data['low_ma5'] = data.apply(lambda x: 1 if x['low'] > x['ma5'] else 0, axis=1)
+    list_days = tool.list_days(data[['ts_code', 'trade_date']])
+    print(data.shape)
+    data=data.merge(list_days,on=['ts_code', 'trade_date'])
+    print(data.shape)
     data.to_csv(path + 'data.csv')
 print(data.shape)
+# list_days=tool.list_days(data[['ts_code','trade_date']])
 # data=data.merge(tool.list_days(data,list_days=30))
 print(data.shape)
 print("基础数据",data.shape)
@@ -61,7 +66,7 @@ if os.path.isfile(path + 'score.csv'):
 
     score = pd.read_csv(path + 'score.csv', index_col=0)
 else:
-    score = sheep.grass(data[data['trade_date'].isin(datelist)==True])
+    score = sheep.grass(data[data['trade_date'].isin(datelist)==True],)
 
     # score = sheep.grass(data.head(90000))
     score.reset_index(drop=True,inplace=True)
@@ -121,7 +126,8 @@ stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_cod
 
 
 mv_bins = []
-history_name=tool.history_name()
+history_name=tool.history_name(start_date=stock_marks['trade_date'].min())
+history_name['name']='st'
 mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
 if mv_bins:
     for i in range(len(mv_bins) - 1):
@@ -147,9 +153,9 @@ if mv_bins:
 
 
 #所有股票排名回溯
-top_n=[50]
+top_n=[10,20,30,40,50]
 for i in top_n:
-    for switch in [False]:
+    for switch in [True,False]:
         df = pd.DataFrame()
         stock_mark=stock_mark.merge(history_name,on=['ts_code', 'trade_date'],how='left')
         stock_mark=stock_mark[stock_mark['name'].isna()]
@@ -158,10 +164,13 @@ for i in top_n:
             # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
             df = pd.concat(
                 [stock_mark[stock_mark['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
-        df.to_csv(path+'sort_data_score%s.csv'%i)
+        if switch:
+            df.to_csv(path+'sort_data_score_L%s.csv'%i)
+        else:
+            df.to_csv(path+'sort_data_score_F%s.csv'%i)
         stock = sheep.wool(df, data,days=days)
         stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
-        print(i,stock)
+        print(i,switch,stock)
 
 
 
