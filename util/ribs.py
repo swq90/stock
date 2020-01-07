@@ -24,9 +24,8 @@ new_dir='\\stockdata\\'+str(datetime.datetime.today().date())+'\\'
 # new_dir='\\stockdata\\'+str(datetime.datetime.today().date()-datetime.timedelta(365))+'\\'
 
 path = os.getcwd() + new_dir
-# os.makedirs(new_dir)
-
 datelist=tool.tradeCal(cal=up_cal)
+
 if not os.path.isdir(path):
     os.makedirs(path)
     print(path)
@@ -113,7 +112,7 @@ run_time = datetime.datetime.today()
 
 stock_mark = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_mark.shape)
-stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
+stock_need = data[(data['close'] >= (0.90 * data['pre_close'])) & (data['close'] <= (1.1 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
 # print( stock_need.shape)
 #
@@ -170,7 +169,7 @@ for i in top_n:
             df.to_csv(path+'sort_data_score_F%s.csv'%i)
         stock = sheep.wool(df, data,days=days)
         stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
-        print(i,switch,stock)
+        print(i,switch,stock.iloc[-1,-1])
 
 
 
