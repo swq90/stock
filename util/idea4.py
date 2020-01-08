@@ -1,4 +1,4 @@
-# 个股连续5日上涨，最近2天阴险，下跌小于10，下一天涨停概率
+# 个股连续5日上涨，最近2天阴线，下跌小于10，下一天涨停概率
 import datetime
 import os
 
@@ -41,14 +41,7 @@ path_source=os.getcwd() +'\\stockdata\\'+str(today)+'\\'
 
 path_source=os.getcwd() +'\\stockdata\\'+str(today)+'\\'
 
-# print(os.path.dirname(os.getcwd()))
 data=pd.read_csv(path_source + 'data.csv', index_col=0, dtype={'trade_date': object})
-# data=data[data['trade_date']>='20191212']
-print(data.shape)
 
-# tool.pre_data(data,label=list('abcd'))
-t1=datetime.datetime.today()
 z=tool.pre_data(data)
-print(datetime.datetime.today()-t1)
-data.to_csv('data.csv')
-z.to_csv('dz.csv')
+

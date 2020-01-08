@@ -9,8 +9,8 @@ import util.basic as basic
 
 ma = [1, 5, 10]
 period = 5
-up_cal = 240
-temp = 50
+up_cal = 480
+temp = 20
 pre = 5
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 

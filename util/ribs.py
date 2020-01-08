@@ -15,12 +15,21 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 250
+up_cal = 500
 temp = 10
 pre = 5
 days=1
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
-new_dir='\\stockdata\\'+str(datetime.datetime.today().date())+'\\'
+
+
+if datetime.datetime.now().hour>17 :
+
+    today = str(datetime.datetime.today().date())
+else:
+    today=str(datetime.datetime.today().date()-datetime.timedelta(1))
+
+
+new_dir='\\stockdata\\'+today+'\\'
 # new_dir='\\stockdata\\'+str(datetime.datetime.today().date()-datetime.timedelta(365))+'\\'
 
 path = os.getcwd() + new_dir
@@ -112,7 +121,7 @@ run_time = datetime.datetime.today()
 
 stock_mark = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_mark.shape)
-stock_need = data[(data['close'] >= (0.90 * data['pre_close'])) & (data['close'] <= (1.1 * data['pre_close'])) & (
+stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
 # print( stock_need.shape)
 #
@@ -152,9 +161,9 @@ if mv_bins:
 
 
 #所有股票排名回溯
-top_n=[10,20,30,40,50]
+top_n=[50]
 for i in top_n:
-    for switch in [True,False]:
+    for switch in [False]:
         df = pd.DataFrame()
         stock_mark=stock_mark.merge(history_name,on=['ts_code', 'trade_date'],how='left')
         stock_mark=stock_mark[stock_mark['name'].isna()]

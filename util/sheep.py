@@ -114,7 +114,7 @@ def grass(data,period=5,up_cal = 240,items=0):
     return score
 
 
-def sheep(data,pre=5):
+def sheep(data,pre=5,labels=['low_ma5']):
     res = pd.DataFrame()
     for label in labels:
         df = data[['ts_code', 'trade_date', label]].copy()
@@ -173,7 +173,7 @@ def marks(data, score,labels=labels):
     return data
 
 
-def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close"):
+def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close",pct=11):
 
     limit_up = stock[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
     # for trade_date in  data["trade_date"].unique():
