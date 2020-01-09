@@ -114,7 +114,7 @@ def grass(data,period=5,up_cal = 240,items=0):
     return score
 
 
-def sheep(data,pre=5,labels=['low_ma5']):
+def sheep(data,pre=5,labels=labels):
     res = pd.DataFrame()
     for label in labels:
         df = data[['ts_code', 'trade_date', label]].copy()

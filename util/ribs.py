@@ -70,6 +70,16 @@ print(data.shape)
 print(data.shape)
 print("基础数据",data.shape)
 print(data['trade_date'].unique().shape)
+
+if os.path.isfile(path + 'daily-basic.csv'):
+    daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
+else:
+    for i in data['trade_date'].unique():
+        daily_basic = pd.concat([pro.daily_basic(trade_date=i), daily_basic], ignore_index=True)
+    for key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
+        daily_basic[key] = daily_basic[key] / 10000
+    daily_basic.to_csv(path + 'daily-basic.csv')
+
 if os.path.isfile(path + 'score.csv'):
 
     score = pd.read_csv(path + 'score.csv', index_col=0)
@@ -93,6 +103,7 @@ else:
     stock_label.to_csv(path + 'stock-label.csv')
 print('各项满足情况')
 # print(stock_label.info())
+
 
 if os.path.isfile(path + 'stock_marks.csv'):
     stock_marks = pd.read_csv(path + 'stock_marks.csv', index_col=0, dtype={'trade_date': object})
