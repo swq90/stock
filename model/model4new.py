@@ -1,6 +1,11 @@
 # p=12,0<up<=2,sort by up_range,end_date close<limit_up
-# 10天内满足6次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于10%,换手率1.5%
+# 10天内满足7次上涨，且市值小于30亿 # 最后一天均价大于10日均价的1%且小于10%,换手率1.5%
 # t = f5(period=10, avg_up_times=7, total_mv=3000000000, turnover_rate=1.5, up_range=[0.01, 0.1])
+
+# 1.所有股票筛选100*(ma1/ma10-1)在[1,10]之间
+# 2.筛选换手率
+# 3.去除st，退市股票
+# 4.10天上涨大于等于7次的股票
 
 
 import os
@@ -17,19 +22,48 @@ tool = basic.basic()
 
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
 today = datetime.datetime.today().date()
-
+up_n_pct=[1,10]
 periods = 10
 times = 7
-total_mv=30
-turnover_rate=1.5
+others={'total_mv':[-10,30],
+'turnover_rate':[1.5,float('inf')]}
 while (not os.path.isfile(path + str(today) + '\data.csv')) or (
 not os.path.isfile(path + str(today) + '\daily-basic.csv')):
     today = today - datetime.timedelta(1)
-
-data = pd.read_csv(path + str(today) + '\data.csv', index_col=0,
-                   dtype={'trade_date': object})
-daily_basic = pd.read_csv(path + str(today) + '\daily-basic.csv', index_col=0,
+path=path + str(today)
+data = pd.read_csv(path  + '\data.csv', index_col=0,
+                   dtype={'trade_date': object})[['ts_code', 'trade_date', 'ma1','ma10']]
+daily_basic = pd.read_csv(path  + '\daily-basic.csv', index_col=0,
                           dtype={'trade_date': object})
+
+up_times=tool.up_times(data,period=periods,label='ma1',up_times=times)
+print(up_times.shape)
+
+
+print(daily_basic.shape)
+print(data.shape)
+data['ma1/ma10pct']=100*(data['ma1']/data['ma10']-1)
+print(data.shape)
+data=data[(data['ma1/ma10pct']>=up_n_pct[0])&(data['ma1/ma10pct']<=up_n_pct[1])]
+print(data.shape)
+# daily_baisc 用于筛选市值，换手率，
+
+for k,v in others.items():
+    daily_basic=daily_basic[(daily_basic[k]>=v[0])&(daily_basic[k]<=v[1])]
+    print(daily_basic.shape)
+
+
+
+up_times.to_csv('up_time.csv')
+print(up_times.shape)
+
+history = tool.history_name(start_date=data['trade_date'].min())
+history['name'] = 'st'
+data = data.merge(history, on=['ts_code', 'trade_date'], how='left')
+print(data.shape)
+data = data[data['name'].isna()]
+data.drop(columns=['name'],inplace=True)
+
 print(daily_basic.shape)
 print(data.shape)
 df=data.loc[:, ('ts_code', 'trade_date', 'ma1')]
