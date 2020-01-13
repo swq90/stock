@@ -10,7 +10,9 @@ import util.sheep as sheep
 FORMAT = lambda x: '%.4f' % x
 label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
-pct=list(range(-12,12))
+pct=list(range(-11,11))
+# pct=list(range(12))
+
 today = datetime.datetime.today().date()
 tool=basic.basic()
 pro=ts.pro_api()
@@ -24,10 +26,14 @@ while (not os.path.isfile(path + str(today) + '\data.csv')) or (
     today = today - datetime.timedelta(1)
 # 基础数据，市值信息，
 
-data = pd.read_csv(path + str(today) + '\data.csv', index_col=0, dtype={'trade_date': object})
+data = pd.read_csv(path + str(today) + '\data.csv', index_col=0, dtype={'trade_date': object})[['ts_code','trade_date','close','pct_chg','low','ma5','low_ma5']]
 
-
-
+stock_baisc = pd.read_csv(path + str(today) + '\daily-basic.csv', index_col=0, dtype={'trade_date': object})[
+    ['ts_code', 'trade_date', 'turnover_rate','total_mv']]
+path=path+str(today)+'idea6\\'
+if not os.path.isdir(path):
+    os.makedirs(path)
+    print(path)
 
 # limit_price=tool.pre_data(data,['ma1'])
 #
@@ -44,11 +50,14 @@ print(data.shape)
 data = data[data['name'].isna()]
 data.drop(columns='name',inplace=True)
 print(data.shape)
-data.to_csv('datalowma5.csv')
+data.dropna(inplace=True)
+print(data.shape)
 
-stock_baisc = pd.read_csv(path + str(today) + '\daily-basic.csv', index_col=0, dtype={'trade_date': object})[
-    ['ts_code', 'trade_date', 'turnover_rate','total_mv']]
+data.to_csv(path+'2019datalowma5.csv')
+
 res=pd.DataFrame()
+
+
 
 for day in range(12):
 
@@ -60,19 +69,21 @@ for day in range(12):
             stock_label = sheep.sheep(data, pre=day, labels=label)
             stock_label = stock_label[stock_label['count_%s' % t] == day]
 
+        stock_label.to_csv(path+'2019low_ma5_continue_%slist.csv'%day)
+
         for k in pct:
             stock=stock_label.merge(data[(data['pct_chg']<=k+1)&(data['pct_chg']>k)][['ts_code','trade_date']])
-                # stock_label.to_csv(path+'low_ma5_continue_%sstock.csv'%day)
-            stock = stock[(stock['trade_date'] > '20180101') & (stock['trade_date'] < '20190101')]
-            print(stock.shape)
-            stock.to_csv('2018datapct%sday%s.csv'%(k,day))
-            df=sheep.wool(stock,data)
-            df.to_csv('datawoolpct%sday%s.csv'%(k,day))
+            # stock=stock_label.merge(data[abs(data['pct_chg'])<=k])
 
-            # df.to_csv(path+'%s_continue_%swoll.csv'%(label,day))
+            stock = stock[(stock['trade_date'] >= '20190101') & (stock['trade_date'] <= '20191231')]
+            print(stock.shape)
+            stock.to_csv(path+'2019data-pct%sday%s.csv'%(k,day))
+            df=sheep.wool(stock,data)
+
             if df.empty:
                 l.append(0)
             else:
+                df.to_csv(path + '2019data-%swoolpct%sday%s.csv' % (t, k, day))
                 l.append(df.iloc[-1,-1])
     res['%s-%s'%(t,day,)]=l
-res.to_csv('huisuxiaoguo500.csv')
+res.to_csv(path+'huisuxiaoguo2019.csv')

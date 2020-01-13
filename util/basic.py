@@ -477,7 +477,7 @@ class basic:
         df.to_csv("limit_up.csv")
         return df[['ts_code', 'trade_date']]
 
-    def revise(self, data, days=5, rekeys="pre_%s_close", inplace=True, reverse=True):
+    def revise(self, data, days=5, rekeys="pre_%s%s_close", inplace=True, reverse=True):
         res = pd.DataFrame()
         # all_pre = t.revise(all_pre, days=day, rekeys="ma%spct", inplace=False)
         for code in data["ts_code"].unique():
@@ -554,7 +554,7 @@ class basic:
 
         return res.drop(columns='name').drop_duplicates()
 
-    def up_times(self, data, period=10, up_period=1, label='ma1', low=0):
+    def up_times(self, data, period=10, up_times=1, label='ma1', low=0):
         def func(df, low=low):
             return len(df[df >=low])
 
@@ -562,12 +562,12 @@ class basic:
 
         data['%s_up' % label] = data.groupby('ts_code')[label].diff()
 
-        count_times = data.groupby('ts_code')['%s_up' % label].rolling(period, min_periods=up_period).apply(func,
+        count_times = data.groupby('ts_code')['%s_up' % label].rolling(period, min_periods=up_times).apply(func,
                                                                                                             raw=True)
         count_times.index = count_times.index.droplevel()
         count_times=pd.DataFrame(count_times)
         count_times.rename(columns={'%s_up' % label: 'count_%s' % label}, inplace=True)
-        # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_period]
+        # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_times]
         data = data.join(count_times)
 
         return data
