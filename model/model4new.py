@@ -48,10 +48,8 @@ print(data.shape)
 # 上涨次数
 data=data.merge(tool.up_times(data,period=PERIOD,label=LABEL,up_times=TIMES),on=['ts_code','trade_date'],how='left')
 print(data.shape)
-up_times=tool.up_times(data,period=PERIOD,label=LABEL,up_times=TIMES)
-up_times.to_csv('up_time.csv')
-print(up_times.shape)
-print(data.shape)
+
+
 # daily_baisc 用于筛选市值，换手率，
 for k,v in OTHERS.items():
     daily_basic=daily_basic[(daily_basic[k]>=v[0])&(daily_basic[k]<=v[1])]

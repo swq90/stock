@@ -132,64 +132,64 @@ run_time = datetime.datetime.today()
 
 stock_mark = stock_marks[stock_marks['score'] >= 10]
 print('marks1', stock_mark.shape)
-stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
-        abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
-# print( stock_need.shape)
-#
-# stock_need = stock_need[stock_need['close'] < (1.1 * stock_need['pre_close'])]
-# print( stock_need.shape)
-
-# print(stock_need.info())
-# print(stock_marks.info())
-stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
-
-
-mv_bins = []
+# stock_need = data[(data['close'] >= (0.97 * data['pre_close'])) & (data['close'] <= (1.03 * data['pre_close'])) & (
+#         abs(data['open'] - data['close']) <= (0.04 * data['pre_close']))]
 history_name=tool.history_name(start_date=stock_marks['trade_date'].min())
 history_name['name']='st'
-mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
-if mv_bins:
-    for i in range(len(mv_bins) - 1):
-        CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
-        print('市值',(mv_bins[i], mv_bins[i + 1]))
-        stock_data1 = stock_mark.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
-        stock_data1=stock_data1.merge(history_name,on=['ts_code', 'trade_date'],how='left')
-        stock_data1=stock_data1[stock_data1['name'].isna()]
-        stock_data1.drop(columns='name',inplace=True)
-        df = pd.DataFrame()
-        for day in stock_data1['trade_date'].unique():
-            # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
-            df = pd.concat(
-                [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
-            # stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
-        df.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "-30-of-bins.csv")
+pctchg=list(range(0,3,1))
+for p in range(len(pctchg)-1):
+    print(pctchg)
+    print('pctchg:%s~%s'%(pctchg[p],pctchg[p+1]))
+    stock_need=data[(data['pct_chg']>=pctchg[p])&(data['pct_chg']<=pctchg[p+1])]
 
-        stock = sheep.wool(df, data,days=days)
-
-        stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "pct-wool.csv")
-        # print(stock)
+    stock_mark = stock_mark.merge(stock_need[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
 
 
+    mv_bins = []
+    mv_bins = list(range(0, 101, 20)) + [150, 200, 400, 30000]
+    if mv_bins:
+        for i in range(len(mv_bins) - 1):
+            CONTAIN = daily_basic[(daily_basic['total_mv'] >= mv_bins[i]) & (daily_basic['total_mv'] < mv_bins[i + 1])]
+            print('市值',(mv_bins[i], mv_bins[i + 1]))
+            stock_data1 = stock_mark.merge(CONTAIN[['ts_code', 'trade_date']], on=['ts_code', 'trade_date'])
+            stock_data1=stock_data1.merge(history_name,on=['ts_code', 'trade_date'],how='left')
+            stock_data1=stock_data1[stock_data1['name'].isna()]
+            stock_data1.drop(columns='name',inplace=True)
+            df = pd.DataFrame()
+            for day in stock_data1['trade_date'].unique():
+                # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+                df = pd.concat(
+                    [stock_data1[stock_data1['trade_date'] == day].sort_values(by='score', ascending=False).head(30), df])
+                # stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "30ofall_marks.csv")
+            df.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "-30-of-bins.csv")
 
-#所有股票排名回溯
-top_n=[50]
-for i in top_n:
-    for switch in [False]:
-        df = pd.DataFrame()
-        stock_mark=stock_mark.merge(history_name,on=['ts_code', 'trade_date'],how='left')
-        stock_mark=stock_mark[stock_mark['name'].isna()]
-        stock_mark.drop(columns='name',inplace=True)
-        for day in stock_mark['trade_date'].unique():
-            # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
-            df = pd.concat(
-                [stock_mark[stock_mark['trade_date'] == day].sort_values(by='score', ascending=switch).head(i), df])
-        if switch:
-            df.to_csv(path+'sort_data_score_L%s.csv'%i)
-        else:
-            df.to_csv(path+'sort_data_score_F%s.csv'%i)
-        stock = sheep.wool(df, data,days=days)
-        stock.to_csv(path + "all-pct-wool-head%s.csv"%i)
-        print(i,switch,stock.iloc[-1,-1])
+            stock = sheep.wool(df, data,days=days)
+            if stock.iloc[-1,-1]>1:
+                print(stock.iloc[-1,-1])
+            stock.to_csv(path + str((mv_bins[i], mv_bins[i + 1])) + "pct-wool.csv")
+            # print(stock)
+
+
+
+    #所有股票排名回溯
+    top_n=[50]
+    for it in top_n:
+        for switch in [False]:
+            df = pd.DataFrame()
+            stock_mark=stock_mark.merge(history_name,on=['ts_code', 'trade_date'],how='left')
+            stock_mark=stock_mark[stock_mark['name'].isna()]
+            stock_mark.drop(columns='name',inplace=True)
+            for day in stock_mark['trade_date'].unique():
+                # df=pd.concat([data[data['trade_date']==day].sort_values(by='trade_date',ascending=False).head(30),df])
+                df = pd.concat(
+                    [stock_mark[stock_mark['trade_date'] == day].sort_values(by='score', ascending=switch).head(it), df])
+            if switch:
+                df.to_csv(path+'sort_data_score_L%s.csv'%it)
+            else:
+                df.to_csv(path+'sort_data_score_F%s.csv'%it)
+            stock = sheep.wool(df, data,days=days)
+            stock.to_csv(path + "all-pct-wool-head%s.csv"%it)
+            print(it,switch,stock.iloc[-1,-1])
 
 
 

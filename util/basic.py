@@ -570,4 +570,4 @@ class basic:
         # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_times]
         data = data.join(count_times)
 
-        return data
+        return data[['ts_code','trade_date', 'count_%s' % label]]
