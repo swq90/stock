@@ -64,7 +64,7 @@ for day in range(12):
     for t in label:
         l = []
         if day==0:
-            stock_label = data[data['low_ma5']==0][['ts_code','trade_date']]
+            stock_label = data[data[t]==0][['ts_code','trade_date']]
         else:
             stock_label = sheep.sheep(data, pre=day, labels=label)
             stock_label = stock_label[stock_label['count_%s' % t] == day]

@@ -22,7 +22,7 @@ days=1
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 
 
-if datetime.datetime.now().hour>17 :
+if datetime.datetime.now().hour>16 :
 
     today = str(datetime.datetime.today().date())
 else:
@@ -64,12 +64,11 @@ else:
     data=data.merge(list_days,on=['ts_code', 'trade_date'])
     print(data.shape)
     data.to_csv(path + 'data.csv')
-print(data.shape)
 # list_days=tool.list_days(data[['ts_code','trade_date']])
 # data=data.merge(tool.list_days(data,list_days=30))
-print(data.shape)
+
 print("基础数据",data.shape)
-print(data['trade_date'].unique().shape)
+
 
 if os.path.isfile(path + 'daily-basic.csv'):
     daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
@@ -91,7 +90,7 @@ else:
     score.to_csv(path + 'score.csv')
 #     调用方法获得得分表
 print('对应分数')
-print(score.info())
+
 data=data[data['trade_date'].isin(datelist)==True]
 # print(data['trade_date'].unique().shape)
 
@@ -104,13 +103,20 @@ else:
 print('各项满足情况')
 # print(stock_label.info())
 
-
 if os.path.isfile(path + 'stock_marks.csv'):
     stock_marks = pd.read_csv(path + 'stock_marks.csv', index_col=0, dtype={'trade_date': object})
 else:
     stock_marks = sheep.marks(stock_label, score)
     stock_marks.to_csv(path + 'stock_marks.csv')
 print('marks', stock_marks.shape)
+
+if os.path.isfile(path + 'history_name.csv'):
+    stock_marks = pd.read_csv(path + 'history_name.csv', index_col=0, dtype={'trade_date': object})
+
+else:
+    history_name=tool.history_name(start_date=stock_marks['trade_date'].min())
+    history_name['name']='st'
+    history_name.to_csv(path + 'history_name.csv')
 
 if os.path.isfile(path + 'daily-basic.csv'):
     daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
