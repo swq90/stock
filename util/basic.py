@@ -538,20 +538,21 @@ class basic:
         res = pd.DataFrame()
         data = pro.namechange()
         data = data[data['name'].str.contains(keyword) == True]
-        data['end_date'] = data['end_date'].fillna(
-            datetime.datetime.today().strftime('%Y%m%d'))
+        end_date = end_date if end_date else datetime.datetime.today().strftime('%Y%m%d')
+        data['end_date'] = data['end_date'].fillna(end_date)
+        data=data[data['end_date']>=start_date]
+        data.to_csv('data33.txt')
         for i in range(data.shape[0]):
             df = pd.DataFrame()
             source = data.iloc[i]
-            start_date = start_date if start_date else source['start_date']
-            end_date = end_date if end_date else source['end_date']
-            df['trade_date'] = pd.date_range(start=start_date, end=end_date)
+            if source['start_date']<start_date:
+                source['start_date']=start_date
+            df['trade_date'] = pd.date_range(start=source['start_date'], end=source['end_date'])
             df['trade_date'] = df['trade_date'].astype(str).apply(lambda x: x.replace('-', ''))
             df['ts_code'] = source['ts_code']
             df['name'] = source['name']
-
+            # df=df.loc[(df['trade_date']>=start_date)]
             res = pd.concat([df, res], ignore_index=True)
-
         return res.drop(columns='name').drop_duplicates()
 
     def up_times(self, data, period=10, up_times=1, label='ma1', low=0):
