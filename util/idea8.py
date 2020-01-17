@@ -20,10 +20,10 @@ pro=ts.pro_api()
 # 获得基础数据
 
 XISHU=0.998
-PERIOD=5
-TIMES=5
-OTHERS={'pct_chg':[1,2]}
-# OTHERS={}
+# PERIOD=5
+# TIMES=5
+# OTHERS={'pct_chg':[1,2]}
+OTHERS={}
 
 while (not os.path.isfile(PATH + str(today) + '\data.csv')) or (
         not os.path.isfile(PATH + str(today) + '\daily-basic.csv')) or (
@@ -50,44 +50,52 @@ if not os.path.isdir(PATH):
 # print(data.shape)
 # data.dropna(inplace=True)
 print(data.shape)
-data.sort_values(by='trade_date',inplace=True)
-# data.to_csv(PATH+'2019datalowma5.csv')
-for l in LABEL:
-    print(l)
-    if 'lowma5'==l:
-        data['lowma5']=data.apply(lambda x:1 if x['low']>(XISHU*x['ma5']) else 0 ,axis=1)
-
-        c_times = data.groupby('ts_code')[l].rolling(PERIOD).sum()
-        c_times.index = c_times.index.droplevel()
-        c_times = pd.DataFrame(c_times)
-        c_times.rename(columns={'lowma5': 'count_%s'%l}, inplace=True)
-        # count_times=count_times[count_times['%s_%s_uptimes'%(LABEL,period)]>=up_period]
-        data = data.join(c_times)
-        data.to_csv('idea88.csv')
-        print('888',data.shape)
-
-    else:
-        c_data=tool.up_times(data,period=PERIOD,up_times=TIMES,label=l)
-        data=data.merge(c_data,on=['ts_code','trade_date'],how='left')
-    print(data.shape)
-    df=data[data['count_%s'%l]>=TIMES]
-    print(df.shape)
-    df = df.merge(history, on=['ts_code', 'trade_date'], how='left')
-    df = df[df['name'].isna()]
-    df.drop(columns='name', inplace=True)
-    print(df.shape)
-    df.dropna(inplace=True)
-    print(df.shape)
+# PERIOD=5
+# TIMES=5
+# OTHERS={'pct_chg':[1,2]}
+def dis(data,LABEL=[],PERIOD=5,TIMES=5,**OTHERS):
 
 
+    data.sort_values(by='trade_date',inplace=True)
+    # data.to_csv(PATH+'2019datalowma5.csv')
+    for l in LABEL:
+        print(l)
+        if 'lowma5'==l:
+            data['lowma5']=data.apply(lambda x:1 if x['low']>(XISHU*x['ma5']) else 0 ,axis=1)
 
-    for k,v in OTHERS.items():
-        df=df.loc[df[k]>=v[0]]
+            c_times = data.groupby('ts_code')[l].rolling(PERIOD).sum()
+            c_times.index = c_times.index.droplevel()
+            c_times = pd.DataFrame(c_times)
+            c_times.rename(columns={'lowma5': 'count_%s'%l}, inplace=True)
+            # count_times=count_times[count_times['%s_%s_uptimes'%(LABEL,period)]>=up_period]
+            data = data.join(c_times)
+
+
+        else:
+            c_data=tool.up_times(data,period=PERIOD,up_times=TIMES,label=l)
+            data=data.merge(c_data,on=['ts_code','trade_date'],how='left')
+        print(data.shape)
+        df=data[data['count_%s'%l]>=TIMES]
         print(df.shape)
-        df=df.loc[df[k]<=v[1]]
+        df = df.merge(history, on=['ts_code', 'trade_date'], how='left')
+        df = df[df['name'].isna()]
+        df.drop(columns='name', inplace=True)
         print(df.shape)
-    filename=str(['%s_%s'%(k,v) for k,v in OTHERS.items() ])
-    df.to_csv(PATH+'%s%stimes%s%s.csv'%(l,PERIOD,TIMES,filename))
+        df.dropna(inplace=True)
+        print(df.shape)
 
-    wool=sheep.wool(df,data)
-    wool.to_csv(PATH+'%s%stimes%s%shuisuxiaoguo.csv'%(l,PERIOD,TIMES,filename))
+
+
+        for k,v in OTHERS.items():
+            df=df.loc[df[k]>=v[0]]
+            print(df.shape)
+            df=df.loc[df[k]<=v[1]]
+            print(df.shape)
+        filename=str(['%s_%s'%(k,v) for k,v in OTHERS.items() ])
+        df.to_csv(PATH+'%s%stimes%s%s.csv'%(l,PERIOD,TIMES,filename))
+
+        wool=sheep.wool(df,data)
+        wool.to_csv(PATH+'%s%stimes%s%shuisuxiaoguo.csv'%(l,PERIOD,TIMES,filename))
+
+
+z=dis(data,label='lowma5',kv=100,tv=20)

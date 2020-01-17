@@ -15,7 +15,7 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 500
+up_cal = 250
 temp = 10
 pre = 5
 days=1
@@ -111,13 +111,14 @@ else:
 print('marks', stock_marks.shape)
 
 if os.path.isfile(path + 'history_name.csv'):
-    stock_marks = pd.read_csv(path + 'history_name.csv', index_col=0, dtype={'trade_date': object})
+    history_name= pd.read_csv(path + 'history_name.csv', index_col=0, dtype={'trade_date': object})
 
 else:
-    history_name=tool.history_name(start_date=stock_marks['trade_date'].min())
+    history_name=tool.history_name(start_date=data['trade_date'].min())
     history_name['name']='st'
     history_name.to_csv(path + 'history_name.csv')
 
+print('hhh%s',history_name.shape)
 if os.path.isfile(path + 'daily-basic.csv'):
     daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
 else:

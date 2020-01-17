@@ -10,15 +10,14 @@ import util.sheep as sheep
 FORMAT = lambda x: '%.4f' % x
 label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
-pct=list(range(-11,11))
+pct=list(range(5,5))
+pct=[]
 # pct=list(range(12))
 
 today = datetime.datetime.today().date()
 tool=basic.basic()
 pro=ts.pro_api()
 # 获得基础数据
-t=pro.stk_limit(ts_code='')
-
 
 while (not os.path.isfile(path + str(today) + '\data.csv')) or (
         not os.path.isfile(path + str(today) + '\daily-basic.csv')) or (
@@ -27,7 +26,7 @@ while (not os.path.isfile(path + str(today) + '\data.csv')) or (
 # 基础数据，市值信息，
 
 data = pd.read_csv(path + str(today) + '\data.csv', index_col=0, dtype={'trade_date': object})[['ts_code','trade_date','close','pct_chg','low','ma5','low_ma5']]
-
+print(data.shape)
 stock_baisc = pd.read_csv(path + str(today) + '\daily-basic.csv', index_col=0, dtype={'trade_date': object})[
     ['ts_code', 'trade_date', 'turnover_rate','total_mv']]
 path=path+str(today)+'idea6\\'
@@ -41,15 +40,14 @@ if not os.path.isdir(path):
 # limit_price['limit_down'] = (limit_price['pre_1_ma1']*0.9).map(FORMAT)
 # limit_price['limit_up'] = limit_price['limit_up'].map(FORMAT)
 # limit_price['limit_down']=limit_price['limit_down'].astype(float)
-
-
 history = tool.history_name(start_date=data['trade_date'].min())
 history['name'] = 'st'
 data = data.merge(history, on=['ts_code', 'trade_date'], how='left')
-print(data.shape)
+print(history.shape)
+
 data = data[data['name'].isna()]
 data.drop(columns='name',inplace=True)
-print(data.shape)
+print(data.shape,history.shape)
 data.dropna(inplace=True)
 print(data.shape)
 
@@ -68,8 +66,19 @@ for day in range(12):
         else:
             stock_label = sheep.sheep(data, pre=day, labels=label)
             stock_label = stock_label[stock_label['count_%s' % t] == day]
+        stock_label = stock_label.merge(history, on=['ts_code', 'trade_date'], how='left')
+        print(stock_label.shape)
+
+        stock_label = stock_label[stock_label['name'].isna()]
+        stock_label.drop(columns='name', inplace=True)
+        print(stock_label.shape, history.shape)
+        stock_label.dropna(inplace=True)
 
         stock_label.to_csv(path+'2019low_ma5_continue_%slist.csv'%day)
+
+
+
+
 
         for k in pct:
             stock=stock_label.merge(data[(data['pct_chg']<=k+1)&(data['pct_chg']>k)][['ts_code','trade_date']])

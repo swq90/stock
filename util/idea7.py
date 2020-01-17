@@ -40,7 +40,7 @@ path=path+str(today)+'idea7\\'
 if not os.path.isdir(path):
     os.makedirs(path)
     print(path)
-
+today=today.strftime('%Y%m%d')
 df=data.copy()
 
 df.sort_values(by='trade_date',inplace=True)
@@ -51,9 +51,7 @@ c_times = pd.DataFrame(c_times)
 c_times.rename(columns={'lowma5': 'count'}, inplace=True)
 # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_period]
 df = df.join(c_times)
-df.to_csv('idea77.csv')
 
-print('777',df.shape)
 df = df.merge(history, on=['ts_code', 'trade_date'], how='left')
 print(df.shape)
 df = df[df['name'].isna()]
@@ -63,12 +61,7 @@ df.dropna(inplace=True)
 
 print(df.shape)
 
-
-
-
-
 df.to_csv(path+'data.csv')
-
 
 df = df[(df['count'] >= TIMES)&(df['pct_chg']>=CHGPCT[0])&(df['pct_chg']<=CHGPCT[1])][['ts_code', 'trade_date']]
 print(df.shape)
@@ -76,3 +69,4 @@ df.to_csv(path+'low%sma%stimes%s(%s-%s).csv'%(XISHU,PERIOD,TIMES,CHGPCT[0],CHGPC
 
 wool=sheep.wool(df,data)
 wool.to_csv(path+'low%sma%stimes%s(%s-%s)huisuxiaoguo.csv'%(XISHU,PERIOD,TIMES,CHGPCT[0],CHGPCT[1]))
+df[df['trade_date']==today][['ts_code','trade_date']].reset_index(drop=True).to_csv(path+'low%sma%stimes%s(%s-%s)%s.txt'%(XISHU,PERIOD,TIMES,CHGPCT[0],CHGPCT[1],today))
