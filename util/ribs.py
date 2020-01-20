@@ -15,7 +15,7 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 250
+up_cal = 245
 temp = 10
 pre = 5
 days=1
@@ -68,7 +68,14 @@ else:
 # data=data.merge(tool.list_days(data,list_days=30))
 
 print("基础数据",data.shape)
+if os.path.isfile(path + 'history_name.csv'):
+    history_name= pd.read_csv(path + 'history_name.csv', index_col=0, dtype={'trade_date': object})
 
+else:
+    history_name=tool.history_name(start_date=data['trade_date'].min())
+    history_name['name']='st'
+    history_name.to_csv(path + 'history_name.csv')
+    print('hhh%s',history_name.shape)
 
 if os.path.isfile(path + 'daily-basic.csv'):
     daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
@@ -110,15 +117,7 @@ else:
     stock_marks.to_csv(path + 'stock_marks.csv')
 print('marks', stock_marks.shape)
 
-if os.path.isfile(path + 'history_name.csv'):
-    history_name= pd.read_csv(path + 'history_name.csv', index_col=0, dtype={'trade_date': object})
 
-else:
-    history_name=tool.history_name(start_date=data['trade_date'].min())
-    history_name['name']='st'
-    history_name.to_csv(path + 'history_name.csv')
-
-print('hhh%s',history_name.shape)
 if os.path.isfile(path + 'daily-basic.csv'):
     daily_basic = pd.read_csv(path + 'daily-basic.csv', index_col=0, dtype={'trade_date': object})
 else:
