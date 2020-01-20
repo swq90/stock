@@ -25,7 +25,7 @@ path = 'D:\\workgit\\stock\\util\\stockdata\\'
 today = datetime.datetime.today().date()
 up_n_pct=[1,10]
 PERIOD= 10
-TIMES= 7
+TIMES= 6
 LABEL='ma1'
 OTHERS={'total_mv':[-10,30],'turnover_rate':[1.5,float('inf')]}
 
