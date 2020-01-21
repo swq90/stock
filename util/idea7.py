@@ -83,23 +83,29 @@ def idea7(XISHU=0.998, UPPER=False, PERIOD=5, TIMES=5, CHGPCT=[1, 2]):
         path + 'low%sma%stimes%s(%s-%s)%s.txt' % (XISHU, PERIOD, TIMES, CHGPCT[0], CHGPCT[1], today))
     return wool
 
+idea7()
+print(datetime.datetime.now())
 res = pd.DataFrame()
 start=0.94
-end=1.1
+end=1.02
 interval=0.001
 
 for i in np.arange(start, end,interval,float):
     print(i)
-    t = idea7(XISHU=i)
+    t = idea7(XISHU=i,UPPER=interval)
     if t.empty:
-        res.loc[i, 'res'] = 0
+        continue
     else:
         res.loc[i, 'res'] = t.iloc[-1, -1]
+        print(t.iloc[-1,-1])
         res.loc[i, 'avg_deals'] = t['n'].mean()
         res.loc[i, 'dates'] = t.shape[0]
-print(res)
-
-res.plot()
-plt.title('%s-%s,jiange%s'%(start,end,interval))
-plt.show()
-res.to_csv()
+        print(res)
+if res.empty:
+    print(res,'无数据')
+else:
+    res[['res']].plot()
+    plt.title('%s-%s2,jiange%s'%(start,end,interval))
+    plt.show()
+    res.to_csv('%s-%s,jiange%s.csv'%(start,end,interval))
+    print(datetime.datetime.now())
