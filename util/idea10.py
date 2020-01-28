@@ -20,7 +20,9 @@ while (not os.path.isfile(path + str(today) + '\data.csv')) :
 # 基础数据，市值信息，
 df=pd.DataFrame()
 data = pd.read_csv(path + str(today) + '\data.csv', index_col=0, dtype={'trade_date': object})
-# data=data[['ts_code','trade_date',label_roof,label_floor,'ma1']].sort_values(by='trade_date')
+# data=data[['ts_code','
+#
+# trade_date',label_roof,label_floor,'ma1']].sort_values(by='trade_date')
 # df=data.copy()
 # df['roof_chg']=data.groupby('ts_code')[label_roof]-data.groupby('ts_code')[label_roof].shift(-1)
 # df['floor_chg']=data.groupby('ts_code')[label_floor]-data.groupby('ts_code')[label_floor].shift(-1)
@@ -33,8 +35,12 @@ def pct_chg(data, periods=10, up_times=1, label='ma1', low=0,high=None):
 
     data = data[['ts_code', 'trade_date',label]].copy().sort_values(by=['ts_code','trade_date'])
 
-    data['%s_up' % label] = data.groupby('ts_code')[[label]].pct_change(periods=periods-1).shift(-periods+1)
-
+    data['%s_%s_chg' % (periods,label)] = data.groupby('ts_code')[[label]].pct_change(periods=periods-1).shift(-periods+1)
+    data['1_%s_chg' % label] = data.groupby('ts_code')[label].diff()
+    if low is not None:
+        data['low_up']=data.apply(lambda x: 1 if data['1_%s_chg' % label]>=(data['%s_%s_chg' % (periods,label)]**(1/periods)) else 0,axis=1)
+    if high is not None:
+        data['high_up']=data.apply(lambda x: 1 if data['1_%s_chg' % label]<=(data['%s_%s_chg' % (periods,label)]**(1/periods)) else 0,axis=1)
     count_times = data.groupby('ts_code')['%s_up' % label].rolling(periods, min_periods=up_times).apply(func,
                                                                                                         raw=True)
     count_times.index = count_times.index.droplevel()
@@ -42,8 +48,8 @@ def pct_chg(data, periods=10, up_times=1, label='ma1', low=0,high=None):
     count_times.rename(columns={'%s_up' % label: 'count_%s' % label}, inplace=True)
     # count_times=count_times[count_times['%s_%s_uptimes'%(label,period)]>=up_times]
     data = data.join(count_times)
-
-    return data[['ts_code','trade_date', 'count_%s' % label]]
+    return data
+    # return data[['ts_code','trade_date', 'count_%s' % label]]
 
 
 pct_chg(data.head(300),label='close',)

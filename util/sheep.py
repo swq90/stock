@@ -94,8 +94,8 @@ def grass(data,period=5,up_cal = 240,items=0):
         df_pct = pd.DataFrame(df.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
         df_pct['pct'] = df_pct['count_%s' % label] / df_pct['count_%s' % label].sum()
         #
-        print('up:%s>pre_%s' % (label, label), up_pct)
-        print('all:%s>pre_%s' % (label, label), df_pct)
+        # print('up:%s>pre_%s' % (label, label), up_pct)
+        # print('all:%s>pre_%s' % (label, label), df_pct)
         up_pct.rename(columns={'pct': 'up_pct'}, inplace=True)
         df_pct.rename(columns={'pct': 'all_pct'}, inplace=True)
         g = up_pct[['up_pct']].merge(df_pct[['all_pct']], left_index=True, right_index=True)
@@ -106,7 +106,7 @@ def grass(data,period=5,up_cal = 240,items=0):
         g['%sscore' % label] = (g['div'].max()//0.5+5)*g['div'] / g['div'].max()
 
 
-        print(g)
+        # print(g)
         if score.empty:
             score = g[['%sscore' % label]]
         else:

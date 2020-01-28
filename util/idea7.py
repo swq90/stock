@@ -86,13 +86,14 @@ def idea7(XISHU=0.998, UPPER=False, PERIOD=5, TIMES=5, CHGPCT=[1, 2]):
 idea7()
 print(datetime.datetime.now())
 res = pd.DataFrame()
-start=0.94
-end=1.02
+start=0.80
+
+end=1.06
 interval=0.001
 
 for i in np.arange(start, end,interval,float):
     print(i)
-    t = idea7(XISHU=i,UPPER=interval)
+    t = idea7(XISHU=i)
     if t.empty:
         continue
     else:
@@ -105,7 +106,8 @@ if res.empty:
     print(res,'无数据')
 else:
     res[['res']].plot()
-    plt.title('%s-%s2,jiange%s'%(start,end,interval))
+    plt.title('%s-%s2,jiange%s_upper%s'%(start,end,interval,interval))
+    plt.savefig(datetime.datetime.today().date().strftime('%Y%m%d')+'-%s-%s,jiange%s_upper%s.png'%(start,end,interval,interval))
     plt.show()
-    res.to_csv('%s-%s,jiange%s.csv'%(start,end,interval))
+    res.to_csv('%s-%s,jiange%s_upper%s.csv'%(start,end,interval,interval))
     print(datetime.datetime.now())
