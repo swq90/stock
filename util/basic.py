@@ -116,7 +116,7 @@ class basic:
         else:
             res = pro.daily(ts_code=ts_code, trade_date=trade_date, start_date=start_date, end_date=end_date)
 
-        return res[res["ts_code"].isin(NOTCONTAIN) == False]
+        return res[res["ts_code"].isin(NOTCONTAIN['ts_code']) == False]
         return res
 
     # def ma(self, data, ma=5):

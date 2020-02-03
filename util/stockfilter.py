@@ -16,7 +16,7 @@ class StockFilter:
 
     # 默认过滤掉传入关键字，如果要
 
-    def stock_basic(self, trade_date, contain=True, **basic):
+    def stock_basic(self, trade_date=None, contain=True, **basic):
 
         # basic = {'name':'股票名',
         #          'area': '所在地域',
@@ -30,8 +30,8 @@ class StockFilter:
         #          'is_hs': '是否沪深港通标的，N否 H沪股通 S深股通'}
 
         stock_basic = pro.stock_basic()
-
-        daily_basic = pro.daily_basic(trade_date=TODAY)
+        trade_date=trade_date if trade_date else TODAY
+        daily_basic = pro.daily_basic(trade_date=trade_date)
 
         res = pd.DataFrame()
         for key, value in basic.items():
@@ -50,7 +50,9 @@ class StockFilter:
         res = res.drop_duplicates()
         print("共过滤掉数据", res.shape[0])
 
-        return res["ts_code"]
+        # return res["ts_code"]
+        return res
+
 
     # 每日指标
     # def stock_daily(self,**content):
@@ -107,3 +109,20 @@ class StockFilter:
 # z.to_csv("cut.csv")
 # print(z.head(20))
 
+#
+# stock_basic = pro.stock_basic()
+# # stock_basic.to_csv('all.csv')
+# # print(stock_basic['industry'].unique())
+# tool=StockFilter()
+# res=tool.stock_basic(industry='生物制药|医药商业|医疗保健|中成药|化学制药')
+# res=res.merge(stock_basic,on='ts_code')
+# res=res[res['name'].str.contains('ST') == False]
+# res.to_csv('yiyao.csv')
+# print(res.shape)
+# print(res['industry'].unique())
+#
+# res=tool.stock_basic(industry='互联网')
+# res=res.merge(stock_basic,on='ts_code')
+# res = res[res['name'].str.contains('ST') == False]
+# res.to_csv('internet.csv')
+# print(res.shape)

@@ -8,6 +8,8 @@ import tushare as ts
 # import util.basic as basic
 import util.sheep as sheep
 pro=ts.pro_api()
+
+
 today=datetime.datetime.today().date()
 
 path_source=os.getcwd() +'\\stockdata\\'+str(today)+'\\'
