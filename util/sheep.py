@@ -1,4 +1,3 @@
-
 import pandas as pd
 import tushare as ts
 import util.basic as basic
@@ -20,9 +19,7 @@ tool = basic.basic()
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 
 
-
-
-def grass(data,period=5,up_cal = 240,items=0):
+def grass(data, period=5, up_cal=240, items=0):
     # up 满足上涨条件的数据
     score = pd.DataFrame()
     df = sheep(data)
@@ -33,7 +30,7 @@ def grass(data,period=5,up_cal = 240,items=0):
     if up_cal & (not items):
         up = up[up["trade_date"].isin(tool.tradeCal(cal=up_cal))]
     elif items:
-        up=up.sort_values('trade_date',ascending=False).head(items)
+        up = up.sort_values('trade_date', ascending=False).head(items)
     # print('up', up.shape)
 
     # for label in labels:
@@ -80,7 +77,7 @@ def grass(data,period=5,up_cal = 240,items=0):
     up_pre = up[['ts_code', 'pre_n_date']]
     up_pre.rename(columns={'pre_n_date': 'trade_date'}, inplace=True)
     up_pre = up_pre.merge(df, on=['ts_code', 'trade_date'])
-    df = df[df["trade_date"]>=up_pre['trade_date'].min()]
+    df = df[df["trade_date"] >= up_pre['trade_date'].min()]
 
     # up_pre_score=up_pre.groupby(by=)
 
@@ -89,7 +86,7 @@ def grass(data,period=5,up_cal = 240,items=0):
     # print('uppre', up_pre.shape)
     # up_pre.to_csv(filename + 'up_pre%s.csv' % label)
     for label in labels:
-        up_pct = pd.DataFrame(up_pre.groupby(by='count_%s'%label).size(), columns=['count_%s' % label])
+        up_pct = pd.DataFrame(up_pre.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
         up_pct['pct'] = up_pct['count_%s' % label] / up_pct['count_%s' % label].sum()
         df_pct = pd.DataFrame(df.groupby(by='count_%s' % label).size(), columns=['count_%s' % label])
         df_pct['pct'] = df_pct['count_%s' % label] / df_pct['count_%s' % label].sum()
@@ -100,11 +97,10 @@ def grass(data,period=5,up_cal = 240,items=0):
         df_pct.rename(columns={'pct': 'all_pct'}, inplace=True)
         g = up_pct[['up_pct']].merge(df_pct[['all_pct']], left_index=True, right_index=True)
         # g['div'] = g['up_pct'] / g['all_pct']
-        g['div'] = g['up_pct'] / g['all_pct']-1
+        g['div'] = g['up_pct'] / g['all_pct'] - 1
         #
         # g['%sscore' % label] = g.apply(lambda x: 10 * x['div'], axis=1) / g['div'].sum()
-        g['%sscore' % label] = (g['div'].max()//0.5+5)*g['div'] / g['div'].max()
-
+        g['%sscore' % label] = (g['div'].max() // 0.5 + 5) * g['div'] / g['div'].max()
 
         # print(g)
         if score.empty:
@@ -114,21 +110,21 @@ def grass(data,period=5,up_cal = 240,items=0):
     return score
 
 
-def sheep(data,pre=5,labels=labels):
+def sheep(data, pre=5, labels=labels):
     res = pd.DataFrame()
     for label in labels:
         df = data[['ts_code', 'trade_date', label]].copy()
         # df['count_%s' % label] = 0
         if label == 'low_ma5':
-            df.sort_values(by='trade_date',inplace=True)
-            z=df.groupby('ts_code')[label].rolling(pre).sum()
-            z.index=z.index.droplevel()
+            df.sort_values(by='trade_date', inplace=True)
+            z = df.groupby('ts_code')[label].rolling(pre).sum()
+            z.index = z.index.droplevel()
             z = pd.DataFrame(z)
             z.rename(columns={label: 'count_%s' % label}, inplace=True)
 
-            df=df.join(z)
+            df = df.join(z)
         else:
-            df=tool.up_times(df,period=5,label=label)
+            df = tool.up_times(df, period=5, label=label)
             # df=df = tool.pre_label(df, label=label, days=pre)
             # for i in range(1, pre + 1):
             #     df = tool.pre_label(df, label=label, days=i)
@@ -149,17 +145,16 @@ def sheep(data,pre=5,labels=labels):
             res = df[['ts_code', 'trade_date', 'count_%s' % label]]
         else:
             res = res.merge(df[['ts_code', 'trade_date', 'count_%s' % label]], on=['ts_code', 'trade_date'])
-        res.loc[:,'count_%s' % label]=res['count_%s' % label].astype('int')
+        res.loc[:, 'count_%s' % label] = res['count_%s' % label].astype('int')
     res = res.dropna()
 
     return res
 
 
-def marks(data, score,labels=labels):
+def marks(data, score, labels=labels):
     df = pd.DataFrame()
     data['score'] = 0
     for label in labels:
-
         data['score'] = data.apply(lambda x: x['score'] + score.loc[x['count_%s' % label]]['%sscore' % label], axis=1)
     # for day in data['trade_date'].unique():
     #     df = pd.concat([data[data['trade_date'] == day].sort_values(by='trade_date', ascending=False).head(50), df])
@@ -173,8 +168,7 @@ def marks(data, score,labels=labels):
     return data
 
 
-def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close",pct=11):
-
+def wool(stock, data, days=1, PRICEB="close", PRICES="close", pct=11):
     limit_up = stock[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
     # for trade_date in  data["trade_date"].unique():
     #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
@@ -182,10 +176,8 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close",pct=11):
     #     d=limit_up[limit_up["trade_date"]==trade_date]
     # print(limit_up)
 
-
     buy_data = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
-
 
     buy_data.columns = ['ts_code', 'buy_date', "buy_price"]
     pre_date = tool.pre_date(data[["trade_date"]], days=days)
@@ -194,10 +186,10 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close",pct=11):
                      inplace=True)
     sell_data = sell_data.merge(buy_data, on=['ts_code', 'buy_date'])
     # sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
-    print('每日平均交易量',sell_data.groupby(by='buy_date')['ts_code'].size().mean())
+    print('每日平均交易量', sell_data.groupby(by='buy_date')['ts_code'].size().mean())
 
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
-    sell_cut=pd.DataFrame()
+    sell_cut = pd.DataFrame()
     # sell_data.to_csv('pctwool1.csv')
 
     sell_cut['pct'] = sell_data.groupby(by='sell_date')['pct'].mean()
@@ -210,7 +202,8 @@ def wool(stock, data,days = 1,PRICEB = "close",PRICES = "close",pct=11):
 
     return sell_cut
 
-def wool2(stock_list,data,days= 1,PRICEB = "close",PRICES = "close"):
+
+def wool2(stock_list, data, days=1, PRICEB="close", PRICES="close"):
     limit_up = stock_list[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
     # for trade_date in  data["trade_date"].unique():
     #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
@@ -220,8 +213,9 @@ def wool2(stock_list,data,days= 1,PRICEB = "close",PRICES = "close"):
 
     df = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
-    df.rename(columns={PRICEB:'buy_price'},inplace=True)
-    df=df.merge(tool.pre_data(data[['ts_code', 'trade_date', PRICEB]],label=[PRICEB],days=-1,new_label=['sell_price']))
+    df.rename(columns={PRICEB: 'buy_price'}, inplace=True)
+    df = df.merge(
+        tool.pre_data(data[['ts_code', 'trade_date', PRICEB]], label=[PRICEB], days=-1, new_label=['sell_price']))
 
     print('每日平均买入量', df.groupby(by='trade_date')['ts_code'].size().mean())
 

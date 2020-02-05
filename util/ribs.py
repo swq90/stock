@@ -10,12 +10,13 @@ import util.sheep as sheep
 import util.fuquan as fuquan
 
 
+
 # ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 240
+up_cal = 40
 temp = 10
 pre = 5
 days=1
@@ -90,7 +91,7 @@ if os.path.isfile(path + 'score.csv'):
 
     score = pd.read_csv(path + 'score.csv', index_col=0)
 else:
-    score = sheep.grass(data[data['trade_date'].isin(datelist)==True],)
+    score = sheep.grass(data[data['trade_date'].isin(datelist)==True],up_cal=up_cal)
 
     # score = sheep.grass(data.head(90000))
     score.reset_index(drop=True,inplace=True)
