@@ -78,15 +78,14 @@ class StockFilter:
     #              "": "",
     #              }
 
-#
+# #
 # if __name__=="__main__":
 #     o = StockFilter()
 #     trade_date=datetime.datetime.today().date()
 #     trade_date=str(trade_date)[:10].replace("-","")
-#     t = o.stock_basic(trade_date,name="st|ST")
-#     print(t)
-# TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-# # z=StockFilter().stock_basic(TODAY, name="st|ST", market="科创板").tolist()
+#     t = o.stock_basic(trade_date,name="st|ST|药",market="科创板",industry='生物制药|医药商业|医疗保健|中成药|化学制药')
+#     print(t,t.shape)
+#     pd.read_csv('')
 # # print(z)
 # pd.set_option('display.max_columns', None)
 # pd.set_option('max_colwidth', 1000)
@@ -126,3 +125,4 @@ class StockFilter:
 # res = res[res['name'].str.contains('ST') == False]
 # res.to_csv('internet.csv')
 # print(res.shape)
+# print()

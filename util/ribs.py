@@ -16,19 +16,18 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 40
+up_cal = 240
 temp = 10
 pre = 5
 days=1
 labels = ['low_ma5', 'low', 'ma1', 'ma5']
 
+today=datetime.datetime.today().date()
 
-if datetime.datetime.now().hour>16 :
+while pro.daily(trade_date=(str(today).replace('-',''))).empty:
 
-    today = str(datetime.datetime.today().date())
-else:
-    today=str(datetime.datetime.today().date()-datetime.timedelta(1))
-
+    today=today()-datetime.timedelta(1)
+today=str(today)
 
 new_dir='\\stockdata\\'+today+'\\'
 # new_dir='\\stockdata\\'+str(datetime.datetime.today().date()-datetime.timedelta(365))+'\\'

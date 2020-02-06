@@ -1,12 +1,14 @@
 import os
+import matplotlib.pyplot as plt
 import numpy as np
+import math
 import pandas as pd
 import tushare as ts
 from pandas import DataFrame
 
 path = os.getcwd()
-START = '20200101'
-END = '20200204'
+START = '20200203'
+END = '20200206'
 pro = ts.pro_api()
 
 date_list: DataFrame = pd.DataFrame()
@@ -44,5 +46,41 @@ up_dis=pd.DataFrame(up_dis)
 up_dis.reset_index(inplace=True)
 up_dis.sort_values(by='ts_code',ascending=False,inplace=True)
 # up_dis.droplevel('trade_date')
-print(up_dis.index)
+# print(up_dis.index)
+plt.rcParams['font.sans-serif'] = [u'SimHei']  # FangSong/黑体 FangSong/KaiTi
+plt.rcParams['axes.unicode_minus'] = False
+industry_list=up_dis.loc[lambda x:x['ts_code']>1]['industry'].unique()
+pic_num=len(industry_list)
+up_count=up_dis.groupby(by='industry')['ts_code'].sum()
+up_count=pd.DataFrame(up_count).reset_index(drop=False)
+# plt.figure()
+# plt.bar(up_count['industry'],up_count['ts_code'])
+# plt.xlabel('industry', fontsize=9)
+# plt.ylabel('count', fontsize=9)
+# plt.show()
+
+i=221
+plt.figure(figsize=(20,20),facecolor='w')
+
+for industry in industry_list:
+    df=up_dis.loc[lambda x:x['industry']==industry].sort_values(by='trade_date')
+    if df['ts_code'].sum()<2:
+        continue
+
+    if i %5==0:
+        i=221
+        plt.show()
+        plt.figure(figsize=(20,20),facecolor='w')
+    plt.subplot(i)
+    i+=1
+
+    # print(up_dis.loc[lambda x:x['industry']==industry]['trade_date'].sort_values())
+    plt.plot(df['trade_date'],df['ts_code'],'go-',linewidth=2,markersize=4)
+    # # plt.plot(x, y, 'r-', x, y, 'go', linewidth=2, markersize=8)
+    plt.xlabel('trade_date', fontsize=9)
+    plt.ylabel('count', fontsize=9)
+    plt.title(industry, fontsize=9)    #
+    plt.grid(True)
+
+print()
 
