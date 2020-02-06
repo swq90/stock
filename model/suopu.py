@@ -5,10 +5,12 @@ import datetime
 import util.sheep as sheep
 import util.basic as basic
 import tushare as ts
-
+import util.stockfilter as filter
 pro=ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
+t=1
 
+NDAY=3
 slected_date='20200203'
 label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
@@ -36,16 +38,24 @@ print(df.shape,down_data.shape,up_data.shape)
 df=df[df['ts_code'].isin(down_data['ts_code'])==False]
 print(df.shape)
 
+# median_list=filter.StockFilter().stock_basic(name="st|ST|药",market="科创板",industry='生物制药|医药商业|医疗保健|中成药|化学制药')
+# print(median_list)
+# df[df["ts_code"].isin(median_list['ts_code']) == False][['ts_code']].to_csv('0203非跌停非医药.txt',index=False)
+df[['ts_code']].to_csv('0203非跌停.txt',index=False)
+
+
 df=df[df['ts_code'].isin(up_data['ts_code'])==False]
 print(df.shape)
 
 
 res=pd.DataFrame()
-t=1
 
-for days in range(1,3):
+
+for days in range(1,NDAY+1):
     for pct in np.arange(-10,11,t):
         data=df[(df['pct_chg']>=pct)&(df['pct_chg']<(pct+t))]
+        if pct==9:
+            print(data)
         data_res = sheep.wool(data, raw_data, days=days)
         if data_res.empty:
             continue
@@ -63,7 +73,8 @@ for days in range(1,3):
     res.loc['others', 'huisu%s'%days] = others_res.iloc[-1, 0]
     res.loc['others', 'count%s'%days] = others_res.iloc[-1, 1]
 # res.sort_values(by='huisu',ascending=False,inplace=True)
-# res['pct']=res['huisu2']/res['huisu1']
-res.to_csv('%s市场多日回溯.csv'%slected_date)
+if 'huisu2'  in list(res):
+    res['pct']=res['huisu2']/res['huisu1']
+res.to_csv('%s市场%s日回溯cut%s.csv'%(slected_date,NDAY,t))
 print()
 
