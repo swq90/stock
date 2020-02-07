@@ -87,6 +87,6 @@ print(df.shape)
 
 df.to_csv(path+'%daysup%stimes.csv'%(PERIOD,TIMES))
 sheep.wool(df,data).to_csv(path+'%daysup%stimeshuisu.csv'%(PERIOD,TIMES))
-df[df['trade_date']==(str(today).replace('-',''))][['ts_code']].reset_index(drop=True).to_csv('%sdaysup%stimes%snew.txt'%(PERIOD,TIMES,str(today)))
+df[df['trade_date']==(str(today).replace('-',''))][['ts_code']].reset_index(drop=True).to_csv('%sdaysup%stimes%snew.txt'%(PERIOD,TIMES,str(today)),index=False)
 
 

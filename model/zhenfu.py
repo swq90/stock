@@ -8,7 +8,7 @@ import tushare as ts
 
 pro=ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
-NDAY=2
+NDAY=4
 swings=20
 slected_date='20200203'
 label = ['low_ma5']
@@ -32,13 +32,17 @@ for swing in range(0,swings+t):
     df=data[data['swing']>=swing]
 
     print(df.shape)
-    if swing==9:
-        df[['ts_code']].reset_index(drop=True).to_csv('振幅大于10.txt')
+    # if swing==9:
+    #     df[['ts_code']].reset_index(drop=True).to_csv('振幅大于10.txt')
     for days in range(1,NDAY+1):
         data_res=sheep.wool(df,raw_data,days=days)
         if data_res.empty:
             continue
         res.loc[swing, 'huisu%s' % days] = data_res.iloc[-1, 0]
         res.loc[swing, 'count%s' % days] = data_res.iloc[-1, 1]
+for i in range(1, NDAY):
+    if 'huisu%s' % (i + 1) in res.columns:
+        res['pct%s' % (i + 1)] = res['huisu%s' % (i + 1)] / res['huisu%s' % i]
+res.to_csv('%s市场%s日回溯振幅cut.csv' % (slected_date, NDAY))
 
 print()
