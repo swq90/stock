@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import datetime
 import tushare as ts
-import util.stockfilter
+import stock.util.stockfilter
 
 # ts.set_token()
 
@@ -11,7 +11,7 @@ pro = ts.pro_api()
 
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
 # NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST|退", market="科创板")
-NOTCONTAIN = util.stockfilter.StockFilter().stock_basic(TODAY, market="科创板")
+NOTCONTAIN = stock.util.stockfilter.StockFilter().stock_basic(TODAY, market="科创板")
 
 PATH = os.getcwd()
 

@@ -4,9 +4,11 @@ import datetime
 import tushare as ts
 from tushare.util import upass
 
+
 token = upass.get_token()
 tool = ts.pro.client.DataApi(token, timeout=60)
 engine = create_engine('postgresql://10.0.0.4:5432/stock', echo=False)
+
 
 start_date = '20180101'
 end_date = '20191231'

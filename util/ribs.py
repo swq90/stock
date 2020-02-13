@@ -5,13 +5,14 @@ import math
 import pandas as pd
 
 import tushare as ts
-import util.basic as basic
-import util.sheep as sheep
-import util.fuquan as fuquan
+
+import stock.util.basic as basic
+import stock.util.sheep as sheep
+import stock.util.fuquan as fuquan
 
 
 
-# ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
+ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]

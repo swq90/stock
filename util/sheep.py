@@ -1,6 +1,6 @@
 import pandas as pd
 import tushare as ts
-import util.basic as basic
+import stock.util.basic as basic
 
 ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()

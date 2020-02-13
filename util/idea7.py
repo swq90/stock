@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import tushare as ts
 import matplotlib.pyplot as plt
-import util.basic as basic
-import util.sheep as sheep
+import stock.util.basic as basic
+import stock.util.sheep as sheep
 
 
 # 获得基础数据
@@ -79,8 +79,8 @@ def idea7(XISHU=0.998, UPPER=False, PERIOD=5, TIMES=5, CHGPCT=[1, 2]):
     if not wool.empty:
         wool.to_csv(
             path + 'low%s-%sma%stimes%s(%s-%s)huisuxiaoguo.csv' % (XISHU, XISHU+UPPER, PERIOD, TIMES, CHGPCT[0], CHGPCT[1]))
-    df[df['trade_date'] == today][['ts_code', 'trade_date']].reset_index(drop=True).to_csv(
-        path + 'low%sma%stimes%s(%s-%s)%s.txt' % (XISHU, PERIOD, TIMES, CHGPCT[0], CHGPCT[1], today))
+    df[df['trade_date'] == today][['ts_code']].to_csv(
+        path + 'low%sma%stimes%s(%s-%s)%s.txt' % (XISHU, PERIOD, TIMES, CHGPCT[0], CHGPCT[1], today),index=False)
     return wool
 
 idea7()
