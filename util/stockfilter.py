@@ -37,7 +37,7 @@ class StockFilter:
         for key, value in basic.items():
             if key in list(stock_basic):
                 df = stock_basic[stock_basic[key].str.contains(value) == contain]
-                print(df.shape)
+                # print(df.shape)
                 basic[key] = ""
             elif key in list(daily_basic):
                 if key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
@@ -45,10 +45,10 @@ class StockFilter:
                 df = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
                 basic[key] = ""
                 # print(daily_basic.shape)
-            print("过滤股票条件%s" % key)
+            # print("过滤股票条件%s" % key)
             res = res.append(df[["ts_code"]])
         res = res.drop_duplicates()
-        print("共过滤掉数据", res.shape[0])
+        # print("共过滤掉数据", res.shape[0])
 
         # return res["ts_code"]
         return res

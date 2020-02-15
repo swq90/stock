@@ -7,14 +7,15 @@ from tushare.util import upass
 
 token=upass.get_token()
 tool=ts.pro.client.DataApi(token,timeout=60)
-engine=create_engine('postgresql://nezha:nezha@10.0.0.4:5432/stock',echo=False)
+engine=create_engine('postgresql://nezha:nezha@10.0.0.5:5432/stock',echo=False)
 
 saved_date=pd.read_sql_query('select distinct trade_date from daily',con=engine)
 saved_date=saved_date.sort_values('trade_date',ascending=False)
 
 t1=datetime.datetime.now()
 start_date='20191221'
-end_date='20200212'
+end_date='20200215'
+# trade_date=''
 tables=['daily','stk_limit','limit_list']
 
 trade_cal=tool.query('trade_cal',start_date=start_date,end_date=end_date,is_open='1')
