@@ -16,8 +16,8 @@ import time
 import pandas as pd
 import tushare as ts
 
-import util.basic as basic
-import util.sheep as sheep
+import stock.util.basic as basic
+import stock.util.sheep as sheep
 pro = ts.pro_api()
 tool = basic.basic()
 

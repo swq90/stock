@@ -2,18 +2,18 @@ import os
 import numpy as np
 import pandas as pd
 import datetime
-import util.sheep as sheep
-import util.basic as basic
+import stock.util.sheep as sheep
+import stock.util.basic as basic
 import tushare as ts
-import util.stockfilter as filter
+import stock.util.stockfilter as filter
 
 pro = ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
-t = 10
+t = 1
 
-NDAY = 4
+NDAY = 9
 slected_date = '20200203'
-label = ['low_ma5']
+# label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
 # pct=list(range(-11,11))
 
