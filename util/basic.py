@@ -347,6 +347,7 @@ class basic:
                 df[new_label[i]] = df[label[i]].shift(-pre_days)
             res = pd.concat([df, res], ignore_index=True)
 
+
         return res
 
     def \

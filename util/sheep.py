@@ -186,12 +186,10 @@ def wool(stock, data, days=1, PRICEB="close", PRICES="close", pct=11):
                      inplace=True)
     sell_data = sell_data.merge(buy_data, on=['ts_code', 'buy_date'])
     # sell_data.to_csv(str(datetime.datetime.today()).replace(':','').replace(' ','')[:20]+'selldata.csv')
-    print('每日平均交易量', sell_data.groupby(by='buy_date')['ts_code'].size().mean())
-
+    # sell_data.to_csv('s111.csv')
+    # print('每日平均交易量', sell_data.groupby(by='buy_date')['ts_code'].size().mean())
     sell_data['pct'] = (sell_data['sell_price'] / sell_data['buy_price'])
     sell_cut = pd.DataFrame()
-    # sell_data.to_csv('pctwool1.csv')
-
     sell_cut['pct'] = sell_data.groupby(by='sell_date')['pct'].mean()
     sell_cut['n'] = sell_data.groupby(by='sell_date')['sell_date'].size()
 
@@ -205,28 +203,20 @@ def wool(stock, data, days=1, PRICEB="close", PRICES="close", pct=11):
 
 def wool2(stock_list, data, days=1, PRICEB="close", PRICES="close"):
     limit_up = stock_list[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
-    # for trade_date in  data["trade_date"].unique():
-    #     z=pro.limit_list(trade_date=trade_date, limit_type='U', fields='ts_code,trade_date,pct_chg')
-    #     h=z[z["pct_chg"]>=10]
-    #     d=limit_up[limit_up["trade_date"]==trade_date]
-    # print(limit_up)
-
     df = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
+    df.dropna(inplace=True)
     df.rename(columns={PRICEB: 'buy_price'}, inplace=True)
     df = df.merge(
-        tool.pre_data(data[['ts_code', 'trade_date', PRICEB]], label=[PRICEB], days=-1, new_label=['sell_price']))
-
+        tool.pre_data(data[['ts_code', 'trade_date', PRICES]], label=[PRICES], pre_days=-1, new_label=['sell_price']))
+    # df.to_csv('s222.csv')
     print('每日平均买入量', df.groupby(by='trade_date')['ts_code'].size().mean())
-
     df['pct'] = (df['sell_price'] / df['buy_price'])
     sell_cut = pd.DataFrame()
     sell_cut['pct'] = df.groupby(by='trade_date')['pct'].mean()
     sell_cut['n'] = df.groupby(by='trade_date')['trade_date'].size()
-
-    # sell_cut = pd.DataFrame(sell_cut)
     sell_cut['all_pct'] = sell_cut['pct'].cumprod()
-
+    sell_cut.dropna(inplace=True)
     return sell_cut
 # # score=pd.DataFrame()
 #
