@@ -47,8 +47,9 @@ def dis_first_limit_second(data=None, start_date=None, end_date=None, days=2):
     count_all_not_one = data[data['is_roof'] == 1].groupby('trade_date')['ts_code'].count()
     count_first = data[(data['is_roof'] == 1) & (data['pre_1_is_roof'] == 0)].groupby('trade_date')['ts_code'].count()
     count_n_y_y = \
-    data[(data['is_roof'] >= 1) & (data['pre_2_is_roof'] == 0) & (data['pre_1_is_roof'] == 1)].groupby('trade_date')[
-        'ts_code'].count()
+        data[(data['is_roof'] >= 1) & (data['pre_2_is_roof'] == 0) & (data['pre_1_is_roof'] == 1)].groupby(
+            'trade_date')[
+            'ts_code'].count()
     count_n_y_a = data[(data['pre_2_is_roof'] == 0) & (data['pre_1_is_roof'] >= 1)].groupby('trade_date')[
         'ts_code'].count()
     df = pd.DataFrame({'count_all': count_all, 'count_all_not_one': count_all_not_one, 'count_first': count_first,
@@ -56,15 +57,16 @@ def dis_first_limit_second(data=None, start_date=None, end_date=None, days=2):
     # save_data(data[['ts_code','trade_date','is_roof','pre_1_is_roof','pre_2_is_roof']],'连板股票%s.csv'%start)
 
     df['p_nyy'] = df['count_n_y_y'] / df['count_n_y_a']
-    df.fillna(0,inplace=True)
+    df.fillna(0, inplace=True)
     return df
 
 
 if __name__ == '__main__':
     start = '20180101'
-    # data=first_limit(start_date=start,days=2)
-    # save_data(data[['ts_code','trade_date','is_roof','pre_1_is_roof','pre_2_is_roof']],'连板股票%s.csv'%start)
+    data = first_limit(start_date=start, days=2)
+    save_data(data.drop(columns=['change', 'pct_chg', 'vol', 'amount', 'up_limit', 'down_limit']),
+              '连板股票%s.csv' % start)
     # df=dis_first_limit_second(data=data,start_date=start,days=2)
     df = dis_first_limit_second(start_date=start, days=2)
-    save_data(df,'连板概率%s.csv' % start)
+    save_data(df, '连板概率%s.csv' % start)
     print('have_done')
