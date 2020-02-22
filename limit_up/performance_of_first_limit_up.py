@@ -54,6 +54,7 @@ class idea1:
         self.raw_data.loc[:, '%s/%s' % (CHANGE[0], CHANGE[1])] = self.raw_data.apply(
             lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
                 CHANGE[1]] - 1) * 100, axis=1)
+        self.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
         self.data = self.raw_data.loc[
             (self.raw_data['pre_2_is_roof'] == 0) & (self.raw_data['pre_1_is_roof'] == 1)].copy()
         self.data.loc[:, 'Categories'] = pd.cut(self.data['%s/%s' % (CHANGE[0], CHANGE[1])], bins, right=False)
@@ -88,23 +89,39 @@ class idea1:
 
 if __name__ == '__main__':
     # print(dir())
-    # start, end = '20180101', '20200219'
-    # start, end, days = '20190220', '20200220', 2
-    start, end, days = '20200210', '20200220', 2
+    start, end = '20180101', '20200219'
+    start, end, days = '20190220', '20200220', 2
+    # start, end, days = '20200210', '20200220', 2
 
     t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
-    t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
+    # t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
+    # t.data['ma']= 10 * t.data['amount'] / t.data['vol']
+
     print('%s个交易日' % t.raw_data['trade_date'].unique().shape[0])
     t.preprocess(CHANGE=['open', 'pre_close'])
-    pct=pd.DataFrame()
+    pctall,pctup=pd.DataFrame(),pd.DataFrame()
     for item in ['open','close','ma','high','low']:
-        t.raw_data['%s/pre_close'%item]=t.raw_data[item]/t.raw_data['pre_close']
-        t.data['%s/pre_close' % item] = t.data[item] / t.data['pre_close']
-        print('all',t.raw_data['%s/pre_close'%item].describe(),type(t.raw_data['%s/pre_close'%item].describe()))
-        print('up',t.data['%s/pre_close'%item].describe())
-        pct['%s/pre_close_all'%item]=t.raw_data['%s/pre_close'%item].describe()[:3]
-        pct['%s/pre_close_up'%item]=t.data['%s/pre_close'%item].describe()[:3]
-    save_data(pct,'首板后价格变化.csv'%(start,end))
+        t.raw_data['all_%s/pre_close'%item]=t.raw_data[item]/t.raw_data['pre_close']
+        t.data['up_%s/pre_close' % item] = t.data[item] / t.data['pre_close']
+        pctall=pd.concat([pctall
+                             ,t.raw_data[['all_%s/pre_close'%item]]],axis=1)
+        pctup=pd.concat([pctup,t.data[['up_%s/pre_close'%item]]],axis=1)
+
+        # print('all',t.raw_data['%s/pre_close'%item].describe(),type(t.raw_data['%s/pre_close'%item].describe()))
+        # print('up',t.data['%s/pre_close'%item].describe())
+        # pct['%s/pre_close_all'%item]=t.raw_data['%s/pre_close'%item].describe()[:3]
+        # pct['%s/pre_close_up'%item]=t.data['%s/pre_close'%item].describe()[:3]
+        # print(pctall.describe(include='all'))
+        # print(pctup.describe(include='all'))
+    pctall=pd.DataFrame(pctall.describe(include='all')).reset_index()
+    pctup=pd.DataFrame(pctup.describe(include='all')).reset_index()
+    pct=pd.concat([pctall,pctup],axis=1)
+    # save_data(pct,'全市场价格变化pct.csv'%(start,end))
+    # save_data(pctup.describe(include='all').reset_index(),'首板后价格变化pct.csv'%(start,end))
+    t.PRICEB='open'
+    for sell in ['close','ma','open']:
+        t.PRICES=sell
+        print(sell,t.roi().iloc[-1,-1])
     save_data(t.data, '首板涨停数据%s-%s.csv'%(start,end))
     t.PRICEB, t.PRICES = 'open', 'close'
     save_data(t.roi(), '首板回溯%s%s%s%s' % (t.PRICEB, t.PRICES, start, end))
