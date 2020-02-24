@@ -4,6 +4,7 @@ import pandas as pd
 import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import save_data
+from stock.util.basic import basic
 
 
 class idea1:
@@ -16,7 +17,7 @@ class idea1:
         self.data = pd.DataFrame()
         self.date = pd.DataFrame({'trade_date': self.raw_data['trade_date'].unique()}).sort_values('trade_date')
 
-    def sell_model(self, model, pb='open', rate=1.01):
+    def sell_model(self, model, pb='open', rate=1.03):
         self.PRICEB = pb
         if isinstance(model, str):
             self.PRICES = model
@@ -37,11 +38,15 @@ class idea1:
             self.raw_data.loc[:, self.PRICES] = self.raw_data.apply(
                 lambda x: x['open'] if x['open'] > (x['pre_close'] * rate) else x['close'], axis=1)
         if model == 3:
-            # 最高价大约开盘的倍数，high卖，否则close卖
+            # 最高价大约开盘的x=?倍数，high卖，否则close卖
             self.raw_data.loc[:, self.PRICES] = self.raw_data.apply(
-                lambda x: x['open'] if x['open'] >= (1.03 * x['pre_close']) else x['open'] * rate if x['high'] > (
+                lambda x: x['open'] if x['open'] >= (1.05 * x['pre_close']) else x['open'] * rate if x['high'] > (
                         x['open'] * rate) else x['close'], axis=1)
-
+        if model == 4:
+            # high高于open的rate倍，high卖，否则close卖
+            self.raw_data.loc[:, self.PRICES] = self.raw_data.apply(
+                lambda x: x['open'] * rate if x['high'] > (
+                        x['open'] * rate) else x['close'], axis=1)
     def preprocess(self, CHANGE=['open', 'pre_close'], bins=None, labels=None,
                    cuts=2):
         """
@@ -51,12 +56,15 @@ class idea1:
         if bins is None:
             bins = [-100] + list(range(-10, 11, cuts)) + [100]
 
-        self.raw_data.loc[:, '%s/%s' % (CHANGE[0], CHANGE[1])] = self.raw_data.apply(
-            lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
-                CHANGE[1]] - 1) * 100, axis=1)
         self.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
+
+        if CHANGE is not None:
+            self.raw_data.loc[:, '%s/%s' % (CHANGE[0], CHANGE[1])] = self.raw_data.apply(
+                lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
+                    CHANGE[1]] - 1) * 100, axis=1)
         self.data = self.raw_data.loc[
             (self.raw_data['pre_2_is_roof'] == 0) & (self.raw_data['pre_1_is_roof'] == 1)].copy()
+
         self.data.loc[:, 'Categories'] = pd.cut(self.data['%s/%s' % (CHANGE[0], CHANGE[1])], bins, right=False)
 
     def segment(self):
@@ -85,53 +93,81 @@ class idea1:
         return sheep.wool(df, self.raw_data, PRICEB=self.PRICEB, PRICES=self.PRICES)
 
         # 筛选收盘涨停数据
+    def select(self,method,days=2):
+
+        if method=='up':
+            return self.data
+        if method==1:
+            #buy:open>=close,sell:pre_close>=open
+            return  self.data.loc[(self.data['pre_open']>=self.data['pre_close'])&(self.data['pre_close']>=self.data['open'])]
+
+        if method==2:
+            #buy:open>=close,sell:pre_close<open
+            return self.data.loc[
+                (self.data['pre_open'] >= self.data['pre_close']) & (self.data['pre_close'] <self.data['open'])]
+
+        if method==3:
+            #buy:open<close,sell:pre_close>=open
+            return self.data.loc[
+                (self.data['pre_open'] < self.data['pre_close']) & (self.data['pre_close'] >= self.data['open'])]
+
+        if method==4:
+            #buy:open<close,sell:pre_close<open
+            return  self.data.loc[(self.data['pre_open']<self.data['pre_close'])&(self.data['pre_close']<self.data['open'])]
+        if method=='all':
+            return self.raw_data
 
 
 if __name__ == '__main__':
     # print(dir())
     start, end = '20180101', '20200219'
-    start, end, days = '20190220', '20200220', 2
-    # start, end, days = '20200210', '20200220', 2
-
+    start, end, days = '20190220', '20200224', 2
+    # start, end, days = '20190220', '20200224', 3
     t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
+    # 1.卖出当日股价较前日收盘的变化
+    # start, end, days = '20200210', '20200220', 3
     # t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
-    # t.data['ma']= 10 * t.data['amount'] / t.data['vol']
+    # t.raw_data['pct:(h-l)']=(t.raw_data['high']-t.raw_data['low'])
+    # t.raw_data['pct:(o-c)']=(t.raw_data['open']-t.raw_data['close'])
+    # t.raw_data['pct:h/o']=(t.raw_data['high']-t.raw_data['open'])
 
-    print('%s个交易日' % t.raw_data['trade_date'].unique().shape[0])
+    # print('%s个交易日' % t.raw_data['trade_date'].unique().shape[0])
+    # t.data = t.raw_data.loc[
+    #     (t.raw_data['pre_%s_is_roof'%days] == 0) & (t.raw_data['pre_%s_is_roof'%(days-1)] == 1)].copy()
+    # df=basic().pre_data(t.data,label=['open'],new_label=['pre_open'])
+    # t.data=t.data.merge(df[['ts_code','trade_date','pre_open']],on=['ts_code','trade_date'])
+    # # for method in range(1,6):
+    # #     df=t.sell_model(method,days=days)
+    # pct=pd.DataFrame()
+    # for con in ['all','up']+list(range(1,5)):
+    #     df = t.select(con, days=days)
+    #     pct_some = pd.DataFrame()
+    #     for item in ['open','close','ma','high','low','pct:(h-l)','pct:(o-c)','pct:h/o']:
+    #
+    #         df['%s_%s/pre_close'%(con,item)]=df[item]/df['pre_close']
+    #         pct_some=pd.concat([pct_some, df['%s_%s/pre_close'%(con,item)]],axis=1)
+    #     pct_some = pd.DataFrame(pct_some.describe(include='all')).reset_index()
+    #     pct_some['index'] = pct_some['index'].astype('object')
+    #     pct=pd.concat([pct,pct_some],axis=1)
+    # save_data(pct,'不同条件价格分布.csv')
+    # # 2.不同策略卖出回溯
+    # t.preprocess(CHANGE=['open', 'pre_close'])
+    # t.PRICEB='open'
+    # for sell in ['close','ma','open']:
+    #     t.PRICES=sell
+    #     print(sell,t.roi().iloc[-1,-1])
+    # save_data(t.data, '首板涨停数据%s-%s.csv'%(start,end))
+    # t.PRICEB, t.PRICES = 'open', 'close'
+    # save_data(t.roi(), '首板回溯%s%s%s%s' % (t.PRICEB, t.PRICES, start, end))
+    # #3.
     t.preprocess(CHANGE=['open', 'pre_close'])
-    pctall,pctup=pd.DataFrame(),pd.DataFrame()
-    for item in ['open','close','ma','high','low']:
-        t.raw_data['all_%s/pre_close'%item]=t.raw_data[item]/t.raw_data['pre_close']
-        t.data['up_%s/pre_close' % item] = t.data[item] / t.data['pre_close']
-        pctall=pd.concat([pctall
-                             ,t.raw_data[['all_%s/pre_close'%item]]],axis=1)
-        pctup=pd.concat([pctup,t.data[['up_%s/pre_close'%item]]],axis=1)
-
-        # print('all',t.raw_data['%s/pre_close'%item].describe(),type(t.raw_data['%s/pre_close'%item].describe()))
-        # print('up',t.data['%s/pre_close'%item].describe())
-        # pct['%s/pre_close_all'%item]=t.raw_data['%s/pre_close'%item].describe()[:3]
-        # pct['%s/pre_close_up'%item]=t.data['%s/pre_close'%item].describe()[:3]
-        # print(pctall.describe(include='all'))
-        # print(pctup.describe(include='all'))
-    pctall=pd.DataFrame(pctall.describe(include='all')).reset_index()
-    pctup=pd.DataFrame(pctup.describe(include='all')).reset_index()
-    pct=pd.concat([pctall,pctup],axis=1)
-    # save_data(pct,'全市场价格变化pct.csv'%(start,end))
-    # save_data(pctup.describe(include='all').reset_index(),'首板后价格变化pct.csv'%(start,end))
-    t.PRICEB='open'
-    for sell in ['close','ma','open']:
-        t.PRICES=sell
-        print(sell,t.roi().iloc[-1,-1])
-    save_data(t.data, '首板涨停数据%s-%s.csv'%(start,end))
-    t.PRICEB, t.PRICES = 'open', 'close'
-    save_data(t.roi(), '首板回溯%s%s%s%s' % (t.PRICEB, t.PRICES, start, end))
-
-    mlist = ['open', 'close','ma'] + list(range(1, 4))
+    mlist = ['open', 'close','ma'] + list(range(1, 5))
     summary = pd.DataFrame()
     for model in mlist:
         print(model, t.data.shape, t.raw_data.shape)
-
         t.sell_model(model)
         df = t.segment()
         summary[model] = df['roi']
         save_data(summary, '首板回溯汇总%s%s.csv' % (start, end))
+
+    print()
