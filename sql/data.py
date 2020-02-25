@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 import numpy as np
 import pandas as pd
 from functools import partial
-import stock.util.stockfilter as sfilter
 from sqlalchemy import create_engine
 import pandas as pd
 import tushare as ts
@@ -18,7 +17,7 @@ tool = ts.pro.client.DataApi(token)
 engine = create_engine('postgresql://nezha:nezha@10.0.0.5:5432/stock', echo=False)
 
 
-def download_data(start_date=None, end_date=None, trade_date=None,days=7, tables=['daily', 'stk_limit', 'limit_list']):
+def download_data(start_date=None, end_date=None, trade_date=None,days=3, tables=['daily', 'stk_limit', 'limit_list']):
     if trade_date is None:
         if not end_date:
             end_date = str(datetime.datetime.today().date()).replace('-', '')
@@ -37,6 +36,7 @@ def download_data(start_date=None, end_date=None, trade_date=None,days=7, tables
 
     count_dict = dict.fromkeys(tables, 0)
     for date in trade_cal['cal_date']:
+        print(date)
         for table in tables:
             if date in saved_date[table].values:
                 continue
@@ -58,10 +58,44 @@ def read_data(table_name='daily', start_date='20200201', end_date=None, filter=T
     data = pd.read_sql_query(sql, con=engine)
     data.drop_duplicates(inplace=True)
     if filter and ('ts_code' in data.columns):
-        NOTCONTAIN = sfilter.StockFilter().stock_basic(end_date, name="st|ST", market="科创板")
+        NOTCONTAIN = sfilter(end_date, name="st|ST", market="科创板")
         data = data[data["ts_code"].isin(NOTCONTAIN['ts_code']) == False]
     return data
+def sfilter(self, trade_date=None, contain=True, **basic):
 
+    # basic = {'name':'股票名',
+    #          'area': '所在地域',
+    #          'industry': '所属行业',
+    #          'market': '市场类型（主板/中小板/创业板/科创板）',
+    #          'exchange': '交易所代码',
+    #          'curr_type': '交易货币',
+    #          'list_status': '上市状态： L上市 D退市 P暂停上市',
+    #          'list_date': '上市日期',
+    #          'delist_date': '退市日期',
+    #          'is_hs': '是否沪深港通标的，N否 H沪股通 S深股通'}
+    sql='select * from stock_basic'
+
+    stock_basic=pd.read_sql('stock_basic',con=engine)
+
+    res = pd.DataFrame()
+    for key, value in basic.items():
+        if key in stock_basic.columns():
+            df = stock_basic[stock_basic[key].str.contains(value) == contain]
+            # print(df.shape)
+            basic[key] = ""
+        # elif key in list(daily_basic):
+        #     if key in ["total_share", "float_share", "free_share", "total_mv", "circ_mv"]:
+        #         daily_basic[key] = daily_basic[key] * 10000
+        #     df = daily_basic[(daily_basic[key] > value[0]) & (daily_basic[key] < value[1])]
+        #     basic[key] = ""
+            # print(daily_basic.shape)
+        # print("过滤股票条件%s" % key)
+        res = res.append(df[["ts_code"]])
+    res = res.drop_duplicates()
+    # print("共过滤掉数据", res.shape[0])
+
+    # return res["ts_code"]
+    return res
 
 def save_data(data, filename, fp=None, fp_date=False):
 
