@@ -90,6 +90,7 @@ def sfilter(self, trade_date=None, contain=True, **basic):
             # print(daily_basic.shape)
         # print("过滤股票条件%s" % key)
         res = res.append(df[["ts_code"]])
+        # print(res.shape)
     res = res.drop_duplicates()
     # print("共过滤掉数据", res.shape[0])
 
@@ -112,8 +113,8 @@ def save_data(data, filename, fp=None, fp_date=False):
 def stock_basic():
     df=pd.DataFrame()
     for status in list('LDP'):
-        df = pd.concat([tool.query('stock_basic',list_status=status,fields='ts_code,symbol,name,area,industry,list_date,list_status,delist_date'),df],ignore_index=True)
-        print(df.shape)
+        df = pd.concat([tool.query('stock_basic',list_status=status,fields='ts_code,symbol,name,area,industry,market,list_date,list_status,delist_date'),df],ignore_index=True)
+        # print(df.shape)
     df.to_sql('stock_basic', con=engine, if_exists='replace' ,index=False)
     print('stock_basic has done')
 
@@ -121,7 +122,7 @@ def stock_basic():
 def adj_share():
     pass
 if __name__ == '__main__':
-    download_data(start_date='20140101')
+    download_data()
     if datetime.datetime.today().weekday()%2==0:
         stock_basic()
     # stock_basic()
