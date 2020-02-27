@@ -36,7 +36,7 @@ def download_data(start_date=None, end_date=None, trade_date=None,days=3, tables
 
     count_dict = dict.fromkeys(tables, 0)
     for date in trade_cal['cal_date']:
-        print(date)
+        # print(date)
         for table in tables:
             if date in saved_date[table].values:
                 continue
@@ -45,7 +45,6 @@ def download_data(start_date=None, end_date=None, trade_date=None,days=3, tables
                 print('%s%s' % (date, table), 'not download')
                 continue
             data.to_sql(table, con=engine, if_exists='append', index=False)
-            # print(date, table)
             count_dict[table] += data.shape[0]
 
 
@@ -79,7 +78,7 @@ def sfilter(self, trade_date=None, contain=True, **basic):
 
     res = pd.DataFrame()
     for key, value in basic.items():
-        if key in stock_basic.columns():
+        if key in stock_basic.columns:
             df = stock_basic[stock_basic[key].str.contains(value) == contain]
             # print(df.shape)
             basic[key] = ""
@@ -111,21 +110,19 @@ def save_data(data, filename, fp=None, fp_date=False):
     filename=os.path.join(fp, filename)
     data.to_csv(filename)
 def stock_basic():
-
-    sql='select count(*) from stock_basic'
     df=pd.DataFrame()
-    if pd.read_sql_query(sql,con=engine).iloc[-1,-1]==0:
-        for status in list('LDP'):
-            df = pd.concat([tool.query('stock_basic',list_status=status),df],ignore_index=True)
-            print(df.shape)
-        df.to_sql('stock_basic', con=engine, if_exists='replace' ,index=False)
-            # , fields='ts_code,list_date,list_status')
-        # stock_basic = pd.concat([df, stock_basic], ignore_index=True)
+    for status in list('LDP'):
+        df = pd.concat([tool.query('stock_basic',list_status=status,fields='ts_code,symbol,name,area,industry,list_date,list_status,delist_date'),df],ignore_index=True)
+        print(df.shape)
+    df.to_sql('stock_basic', con=engine, if_exists='replace' ,index=False)
+    print('stock_basic has done')
+
 
 def adj_share():
     pass
 if __name__ == '__main__':
-    download_data()
-    if datetime.datetime.today().weekday()%3==0:
+    download_data(start_date='20140101')
+    if datetime.datetime.today().weekday()%2==0:
         stock_basic()
-    # print()
+    # stock_basic()
+    # # print()
