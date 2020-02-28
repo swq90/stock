@@ -51,6 +51,9 @@ def download_data(start_date=None, end_date=None, trade_date=None,days=3, tables
 def read_data(table_name='daily', start_date='20200201', end_date=None, filter=True, **notcontain):
     # 基础数据
     # 科创板，st数据
+    if table_name in ['stock_basic','namechange']:
+        sql="select * from %s" % table_name
+        return pd.read_sql_query(sql,con=engine)
     if not end_date:
         end_date = str(datetime.datetime.today().date()).replace('-', '')
     sql = "select * from %s where (trade_date>='%s' and trade_date<='%s')" % (table_name, start_date, end_date)
@@ -97,7 +100,7 @@ def sfilter(self, trade_date=None, contain=True, **basic):
     # return res["ts_code"]
     return res
 
-def save_data(data, filename, fp=None, fp_date=False):
+def save_data(data, filename, fp=None, fp_date=False,mode='w',header=True):
 
     if not fp:
         fp = os.path.join(os.path.dirname(os.getcwd()), 'data', os.path.basename(sys.argv[0]).split('.py')[0])
@@ -109,7 +112,7 @@ def save_data(data, filename, fp=None, fp_date=False):
     if not os.path.exists(fp):
         os.makedirs(fp)
     filename=os.path.join(fp, filename)
-    data.to_csv(filename)
+    data.to_csv(filename,mode=mode,header=header)
 def stock_basic():
     df=pd.DataFrame()
     for status in list('LDP'):
