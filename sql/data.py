@@ -120,13 +120,37 @@ def stock_basic():
         # print(df.shape)
     df.to_sql('stock_basic', con=engine, if_exists='replace' ,index=False)
     print('stock_basic has done')
+# def cal(**kwargs):
+#     tool.query()
+def cal(start=None,end=None,days=3):
+    if not end:
+        end= str(datetime.datetime.today().date()).replace('-', '')
+    cal_list=tool.query('trade_cal', start_date=start, end_date=end, is_open='1')
+    if start:
+        return cal_list['cal_date']
+
+    if end:
+        return cal_list['cal_date'].iloc[-days]
 
 
 def adj_share():
     pass
+
+def new_list():
+    ll=read_data('stock_basic')
+    ll=ll.loc[ll['list_date']>='20200101']
+    df=read_data('daily',start_date='20200101').merge(ll[['ts_code','list_date']],left_on=['ts_code','trade_date'],right_on=['ts_code','list_date'])
+    df1 = read_data('limit_list', start_date='20200101').merge(ll[['ts_code', 'list_date']],
+                                                         on='ts_code')
+    df2 = read_data('stk_limit', start_date='20200101').merge(ll[['ts_code', 'list_date']],
+                                                         on='ts_code')
+    print()
+
 if __name__ == '__main__':
-    download_data()
-    if datetime.datetime.today().weekday()%2==0:
-        stock_basic()
-    # stock_basic()
+    new_list()
+    # download_data()
+    # if datetime.datetime.today().weekday()%2==0:
+    #     stock_basic()
+    # # stock_basic()
     # # print()
+    # # print(cal(end='20200301'),type(cal(end='20200301')))
