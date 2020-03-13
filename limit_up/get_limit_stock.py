@@ -1,13 +1,15 @@
 import pandas as pd
 from functools import partial
-from stock.sql.data import read_data, save_data
+from stock.sql.data import read_data, save_data,cal
 import stock.util.basic as basic
 
 
-def limit_stock(start_date, end_date=None, limit_type='up'):
+def limit_stock(start_date=None, end_date=None, limit_type='up'):
     """
     基础价格&涨跌停价格
     """
+    if start_date is None:
+        start_date=cal(end=end_date)
 
     data = read_data(table_name='daily', start_date=start_date, end_date=end_date)
     stk_limit = read_data(table_name='stk_limit', start_date=start_date, end_date=end_date)
@@ -34,7 +36,7 @@ def first_limit(data=None, start_date=None, end_date=None, limit_type='up', days
     for i in range(1, days + 1):
         df = basic.basic().pre_data(data, label=['is_roof'], pre_days=i)
         data = data.merge(df[['ts_code', 'trade_date', 'pre_%s_is_roof' % i]], on=['ts_code', 'trade_date'])
-    return data
+    return data.dropna()
 
 
 def dis_first_limit_second(data=None, start_date=None, end_date=None, days=2):
@@ -60,6 +62,24 @@ def dis_first_limit_second(data=None, start_date=None, end_date=None, days=2):
     df.fillna(0, inplace=True)
     return df
 
+def m_up_in_n_day():
+    # N天M板
+    N,M=7,3
+    limit_up=read_data('stk_limit')
+    daily=read_data('daily')
+    data=daily.merge(limit_up,on=['ts_code','trade_date'])
+    print(limit_up.shape,daily.shape,data.shape)
+    data['UP']=data.apply(lambda x :1 if x['close']==x['up_limit'] else 0,axis=1)
+    print(data.shape,data.dropna().shape)
+
+    data.sort_values(['ts_code','trade_date'],inplace=True)
+    data.reset_index(drop=True,inplace=True)
+
+    data['times']=data.groupby('ts_code')['UP'].rolling(7).sum().reset_index(drop=True)
+
+    # df=data.groupby('ts_code')['UP'].rolling(7).sum().reset_index()
+
+print()
 
 if __name__ == '__main__':
     start = '20180101'
@@ -70,3 +90,4 @@ if __name__ == '__main__':
     df = dis_first_limit_second(start_date=start, days=2)
     save_data(df, '连板概率%s.csv' % start)
     print('have_done')
+
