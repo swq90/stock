@@ -1,6 +1,6 @@
 # 首次出现涨停(前一日非涨停），后一日开盘与昨日收盘间关系，划区间回溯
 import pandas as pd
-
+from numpy import arange
 import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import save_data
@@ -60,14 +60,14 @@ class idea1:
 
         if CHANGE is not None:
             self.raw_data.loc[:, '%s/%s' % (CHANGE[0], CHANGE[1])] = self.raw_data.apply(
-                lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
+                lambda x: 99 if x[CHANGE[0]] == x['up_limit'] else -99 if x[CHANGE[0]] == x['down_limit'] else (x[CHANGE[0]] / x[
                     CHANGE[1]] - 1) * 100, axis=1)
         self.data = self.raw_data.loc[
             (self.raw_data['pre_2_is_roof'] == 0) & (self.raw_data['pre_1_is_roof'] == 1)].copy()
 
         self.data.loc[:, 'Categories'] = pd.cut(self.data['%s/%s' % (CHANGE[0], CHANGE[1])], bins, right=False)
 
-    def segment(self):
+    def segment(self,days=1):
 
         res = pd.DataFrame()
         for cut in self.data['Categories'].unique():
@@ -75,22 +75,22 @@ class idea1:
             if df.empty:
                 res.loc[str(cut), 'roi'] = None
                 continue
-            res_seg = self.roi(df)
+            res_seg = self.roi(df,days=days)
             if res_seg.empty:
                 res.loc[str(cut), 'roi'] = None
                 continue
             save_data(res_seg,
-                      '首板部分回溯%s_%s_%s_%s_%s.csv' % (cut, self.PRICEB, self.PRICES, self.start_date, self.end_date))
+                      '首板部分回溯%s_%s_%s_%s_%s2.csv' % (cut, self.PRICEB, self.PRICES, self.start_date, self.end_date))
             res.loc[str(cut), 'roi'] = res_seg.iloc[-1, -1]
             res.loc[str(cut), 'n_mean'] = res_seg['n'].mean()
             res.loc[str(cut), 'days'] = res_seg.shape[0]
         save_data(res, '首板分类回溯汇总_%s_%s_%s_%s.csv' % (self.PRICEB, self.PRICES, self.start_date, self.end_date))
         return res
 
-    def roi(self, df=None):
+    def roi(self, df=None,days=1):
         if df is None:
-            return sheep.wool(self.data, self.raw_data, PRICEB=self.PRICEB, PRICES=self.PRICES)
-        return sheep.wool(df, self.raw_data, PRICEB=self.PRICEB, PRICES=self.PRICES)
+            return sheep.wool2(self.data, self.raw_data, PRICEB=self.PRICEB, PRICES=self.PRICES,days=days)
+        return sheep.wool2(df, self.raw_data, PRICEB=self.PRICEB, PRICES=self.PRICES,days=days)
 
         # 筛选收盘涨停数据
     def select(self,method,days=2):
@@ -120,36 +120,46 @@ class idea1:
 
 if __name__ == '__main__':
     # print(dir())
-    start, end = '20180101', '20200219'
-    start, end, days = '20190220', '20200224', 2
-    # start, end, days = '20190220', '20200224', 3
-    t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
-    # 1.卖出当日股价较前日收盘的变化
+    # start, end = '20180101', '20200219'
+    # start, end, days,sell_days = '20190220', '20200224', 2,1
+    # start, end, days = '20200120', '20200224', 2
     # start, end, days = '20200210', '20200220', 3
-    # t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
-    # t.raw_data['pct:(h-l)']=(t.raw_data['high']-t.raw_data['low'])
-    # t.raw_data['pct:(o-c)']=(t.raw_data['open']-t.raw_data['close'])
-    # t.raw_data['pct:h/o']=(t.raw_data['high']-t.raw_data['open'])
+    start, end, days,sell_days = '20180101', '20200320', 3,0
+    t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
+    print(t.raw_data.shape)
+    t.raw_data=t.raw_data[(t.raw_data['pct_chg']>=-11)&(t.raw_data['pct_chg']<=11)]
+    print(t.raw_data.shape)
+    t.raw_data.dropna(inplace=True)
+    print(t.raw_data.shape)
 
+    # # 1.卖出当日股价较前日收盘的变化
+    #
+    # t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
+    # t.raw_data['pct:h-l']=(t.raw_data['high']-t.raw_data['low'])
+    # t.raw_data['pct:o-c']=(t.raw_data['open']-t.raw_data['close'])
+    # t.raw_data['pct:h-o']=(t.raw_data['high']-t.raw_data['open'])
+    #
     # print('%s个交易日' % t.raw_data['trade_date'].unique().shape[0])
     # t.data = t.raw_data.loc[
     #     (t.raw_data['pre_%s_is_roof'%days] == 0) & (t.raw_data['pre_%s_is_roof'%(days-1)] == 1)].copy()
     # df=basic().pre_data(t.data,label=['open'],new_label=['pre_open'])
     # t.data=t.data.merge(df[['ts_code','trade_date','pre_open']],on=['ts_code','trade_date'])
-    # # for method in range(1,6):
-    # #     df=t.sell_model(method,days=days)
+    # t.raw_data.dropna(inplace=True)
+    # print(t.raw_data.shape)
     # pct=pd.DataFrame()
-    # for con in ['all','up']+list(range(1,5)):
+    # # for con in ['all','up']+list(range(1,5)):
+    # for con in ['all','up']:
+    #
     #     df = t.select(con, days=days)
     #     pct_some = pd.DataFrame()
-    #     for item in ['open','close','ma','high','low','pct:(h-l)','pct:(o-c)','pct:h/o']:
+    #     for item in ['open','close','ma','high','low','pct:h-l','pct:o-c','pct:h-o']:
     #
     #         df['%s_%s/pre_close'%(con,item)]=df[item]/df['pre_close']
     #         pct_some=pd.concat([pct_some, df['%s_%s/pre_close'%(con,item)]],axis=1)
     #     pct_some = pd.DataFrame(pct_some.describe(include='all')).reset_index()
     #     pct_some['index'] = pct_some['index'].astype('object')
     #     pct=pd.concat([pct,pct_some],axis=1)
-    # save_data(pct,'不同条件价格分布.csv')
+    # save_data(pct,'不同条件价格分布%s%s.csv'%(start,end))
     # # 2.不同策略卖出回溯
     # t.preprocess(CHANGE=['open', 'pre_close'])
     # t.PRICEB='open'
@@ -161,13 +171,32 @@ if __name__ == '__main__':
     # save_data(t.roi(), '首板回溯%s%s%s%s' % (t.PRICEB, t.PRICES, start, end))
     # #3.
     t.preprocess(CHANGE=['open', 'pre_close'])
-    mlist = ['open', 'close','ma'] + list(range(1, 5))
-    summary = pd.DataFrame()
-    for model in mlist:
-        print(model, t.data.shape, t.raw_data.shape)
-        t.sell_model(model)
-        df = t.segment()
-        summary[model] = df['roi']
-        save_data(summary, '首板回溯汇总%s%s.csv' % (start, end))
+    t.PRICEB='open'
+    t.PRICES='close'
+    t.data=t.data.loc[t.data['open/pre_close']<=2]
+    print(t.data.shape)
+    t.data.dropna(inplace=True)
+    res=t.roi(days=sell_days)
+    print(t.data.shape)
+    save_data(res,'%s-%s回溯指标.csv'%(start,end))
+    # mlist = [ 'open','close','ma'] + list(range(1, 5))
+    # summary = pd.DataFrame()
+    # for model in mlist:
+    #     print(model, t.data.shape, t.raw_data.shape)
+    #     t.sell_model(model)
+    #     df = t.segment(days=sell_days)
+    #     summary[model] = df['roi']
+    # save_data(summary, '首板%s回溯汇总%s%s2.csv' % (sell_days,start, end))
+    # l={}
+    # res=pd.DataFrame()
+    # for rate in arange(1.02,1.06,0.005):
+    #     t.sell_model(4,rate=rate)
+    #     df=t.roi()
+    #     l[rate]=df.iloc[-1,-1]
+    #     print(l)
+    #     df=t.segment(days=sell_days)
+    #     res[rate]=df['roi']
+    # save_data(res,'rate回溯汇总%s%s2.csv' % (start, end))
+    #
 
     print()
