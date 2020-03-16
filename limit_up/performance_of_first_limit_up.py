@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # start, end, days,sell_days = '20190220', '20200224', 2,1
     # start, end, days = '20200120', '20200224', 2
     # start, end, days = '20200210', '20200220', 3
-    start, end, days,sell_days = '20180101', '20200320', 3,0
+    start, end, days,sell_days = '20190101', '20200320', 3,0
     t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
     print(t.raw_data.shape)
     t.raw_data=t.raw_data[(t.raw_data['pct_chg']>=-11)&(t.raw_data['pct_chg']<=11)]
@@ -173,7 +173,9 @@ if __name__ == '__main__':
     t.preprocess(CHANGE=['open', 'pre_close'])
     t.PRICEB='open'
     t.PRICES='close'
-    t.data=t.data.loc[t.data['open/pre_close']<=2]
+    # limit_count=t.data.groupby('trade_date')['ts_code'].count()
+    t.data=t.data.loc[(t.data['open/pre_close']<=2)&(t.data['open/pre_close']>=-8)]
+    # t['all_count']=limit_count
     print(t.data.shape)
     t.data.dropna(inplace=True)
     res=t.roi(days=sell_days)
