@@ -11,8 +11,8 @@ pro = ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
 t = 1
 
-NDAY = 15
-slected_date = '20200203'
+NDAY = 4
+slected_date = '20200228'
 # label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
 # pct=list(range(-11,11))

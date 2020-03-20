@@ -19,6 +19,10 @@ IXIC=pro.query('index_global',ts_code='IXIC',start_date=START)
 # index_basic=pro.query('index_basic',market='SSE')
 #上证指数
 SSE = pro.index_daily(ts_code='000001.SH', start_date=START)
+SSE['pre_friday']=SSE['trade_date'].shift(-1)
+SSE['today_week']=pd.to_datetime(SSE['trade_date']).dt.dayofweek
+SSE['lastday_week']=pd.to_datetime(SSE['trade_date']).dt.dayofweek
+
 save_data(SSE, '上证指数.csv')
 save_data(IXIC, '纳斯达克.csv')
 IXIC['sz_date']=IXIC['trade_date'].shift(1)
