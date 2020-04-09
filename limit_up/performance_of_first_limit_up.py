@@ -185,6 +185,7 @@ if __name__ == '__main__':
     res=res.merge(limit_count,on='trade_date')
     res['占比']=res['n']/res['count']
     save_data(res,'%s-%s回溯指标.csv'%(start,end))
+    print(res.iloc[-3:,:])
     # mlist = [ 'open','close','ma'] + list(range(1, 5))
     # summary = pd.DataFrame()
     # for model in mlist:
