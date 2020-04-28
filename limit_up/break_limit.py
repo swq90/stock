@@ -141,10 +141,11 @@ def re_limit_up3(start_date,end_date):
 def yunei(start_date,end_date):
     rawdata = read_data('daily', start_date=start_date, end_date=end_date)
     limit = read_data('stk_limit', start_date=start_date, end_date=end_date)
-    data = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit']], on=['ts_code', 'trade_date'])
+    data = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
     print(data.shape)
 
     data['limit'] = data.apply(lambda x: 1 if x['close'] == x['up_limit'] else 0, axis=1)
+    data['down']=data.apply(lambda x: 1 if x['close'] == x['down_limit'] else 0, axis=1)
     pre = basic().pre_data(data, label=['limit'], pre_days=2)
     data = data.merge(pre[['ts_code', 'trade_date', 'pre_2_limit']], on=['ts_code', 'trade_date'])
 
@@ -176,17 +177,44 @@ def dis(data,model):
 
 
     return
+def aomei(start_date,end_date):
+    #跌停破板后如何表现
+    rawdata = read_data('daily', start_date=start_date, end_date=end_date)
+    limit = read_data('stk_limit', start_date=start_date, end_date=end_date)
+    data = rawdata.merge(limit[['ts_code', 'trade_date', 'down_limit']], on=['ts_code', 'trade_date'])
+    print(data.shape)
+
+    data['down'] = data.apply(lambda x: 1 if ((x['low'] == x['down_limit']) &(x['close']!=x['low'])) else 0, axis=1)
+    pre = basic().pre_data(data, label=['down'], pre_days=1)
+    data = data.merge(pre[['ts_code', 'trade_date', 'pre_1_down']], on=['ts_code', 'trade_date'])
+
+    print(data.shape)
+
+    data = data.loc[data['pre_1_down'] == 1]
+    print(data['pct_chg'].describe())
+
+    #
+    # data=data.loc[(data['up_limit']==data['close'])&(data['open']==data['close'])&(data['low']<data['up_limit'])]
+    # print(data.shape)
+    data = data.merge(basic().list_days(data, list_days=15))
+    print(data.shape)
+    print(data.describe())
+    # wool=sheep.wool(data,rawdata)
+    return data
+
 
 
 # line_stock()
 # 开盘涨停中间破板后回封
 start_date='20%s0101'
 end_date='20%s1231'
-for year in range(20,21):
+for year in range(19,21):
     print(start_date%year,'----',end_date%year)
     # res=re_limit_up3(start_date%year,end_date%year)
-    res=yunei(start_date%year,end_date%year)
-    save_data(res,'破板后回封次日表现云内%s-%s.csv'%(start_date%year,end_date%year))
+    # res=yunei(start_date%year,end_date%year)
+        # save_data(res,'破板后回封次日表现云内%s-%s.csv'%(start_date%year,end_date%year))
+    res=aomei(start_date % year, end_date % year)
+    save_data(res,'破板后回封次日表现奥美%s-%s.csv'%(start_date%year,end_date%year))
     print(res.describe())
 
 
