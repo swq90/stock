@@ -56,9 +56,22 @@ class idea2:
         data=data.merge(self.stk_limt[['ts_code','trade_date','up_limit']],on=['ts_code','trade_date'])
         print(data.shape)
         data=data.loc[data['low']<data['up_limit']]
+        data_first_day=data.loc[data['low']>=(data['pre_close']*1.2-0.01)]
         print(data.shape)
-        pass
+        data=data.append(data_first_day).append(data_first_day).drop_duplicates(keep=False)
+        print(data.shape)
+        break_data=data.groupby('ts_code')['trade_date'].min().to_frame().reset_index()
+        print(break_data.shape)
+        return break_data
+    def next_performance(self,data,PRICEBUY='close',PRICESELL='close',days=1):
+        res=pd.DataFrame()
 
+        for d in range(1, days):
+            wool=sheep.wool2(data,self.raw_data,PRICEB=PRICEBUY,PRICES=PRICESELL,days=d)
+            res['%spct' % d] = wool['pct']
+            res['%sall_pct' % d] = wool['all_pct']
+        res['n']=wool['n']
+        return res.iloc[:-days,:]
 # t=pro.concept('')
 # o=idea2(start_date='20190101',end_date='20190201')
 # o.list_days(days=60)
@@ -70,6 +83,11 @@ class idea2:
 # ctnu_days=o.red_line.groupby('ts_code')['list_days'].max()
 # o.data_can_buy=o.data[(o.data['low']<o.data['up_limit'])|(o.data['close']<o.data['up_limit'])]
 # buy_date=o.data_can_buy.groupby('ts_code')['list_days'].min()
-o=idea2(start_date='20190101',end_date='20190201')
+start,end='20180101','20181231'
+o=idea2(start_date=start,end_date=end)
 t=o.break_limit(N=50)
+next=o.next_performance(t,days=5)
+print(next.describe())
+save_data(next,'新股破板后表现%s-%s.csv'%(start,end))
+
 print()
