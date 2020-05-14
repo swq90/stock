@@ -20,9 +20,9 @@ def red_line(data):
     print(data.shape)
     list_days=basic().list_days(data)
     print(list_days.shape)
-    data=data.merge(list_days,on=['ts_code','trade_date'])
+    data=data.iloc[:,:2].merge(list_days,on=['ts_code','trade_date'])
     print(data.shape)
-    return data[['ts_code','trade_date']]
+    return data
 # 一字板-一字板，一字板-一字板回封
 # 如果买入当天涨停则不处理
 def roi(data,rawdata):
@@ -55,12 +55,13 @@ def roi(data,rawdata):
 start_date='20%s0401'
 end_date='20%s1231'
 for year in range(20,21):
-    rawdata = read_data('daily', start_date=start_date%year, end_date=end_date%year)
+    rawdata = read_data('daily', start_date=start_date%year, end_date=end_date%year).iloc[:,:-2]
     limit = read_data('stk_limit', start_date=start_date%year, end_date=end_date%year)
     rawdata = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
 
-    print(start_date%year,'----',end_date%year)
+    print(start_date%year,'----',end_date%year,'include %s lines'%rawdata.shape[0])
     line_stock=red_line(rawdata)
+    print(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]])
     res=roi(limit,rawdata)
 
     # res=yunei(start_date%year,end_date%year)
