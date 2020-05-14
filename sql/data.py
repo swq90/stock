@@ -161,9 +161,9 @@ def new_list():
 
 
 if __name__ == '__main__':
-    new_list()
+    # new_list()
 
-    # download_data()
+    download_data()
     # if datetime.datetime.today().weekday()%2==0:
     #     stock_basic()
     # # stock_basic()
