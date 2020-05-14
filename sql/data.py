@@ -145,7 +145,7 @@ def adj_share():
 
 
 def new_list():
-    start='20170101'
+    start='20200501'
     ll = read_data('stock_basic')
     # ll = ll.loc[ll['list_date'] >= '20200101']
     df = read_data('daily', start_date=start).merge(ll[['ts_code', 'list_date']],
@@ -161,9 +161,9 @@ def new_list():
 
 
 if __name__ == '__main__':
-    # new_list()
+    new_list()
 
-    download_data()
+    # download_data()
     # if datetime.datetime.today().weekday()%2==0:
     #     stock_basic()
     # # stock_basic()
