@@ -42,10 +42,11 @@ def download_data(start_date=None, end_date=None, trade_date=None, days=3, table
                 continue
             data = tool.query(table, trade_date=date)
             if data.empty:
-                print('%s%s' % (date, table), 'not download')
+                print('%s%s' % (date, table), 'not download！！！！！！！！！！')
                 continue
             data.to_sql(table, con=engine, if_exists='append', index=False)
             count_dict[table] += data.shape[0]
+            print('%s%s' % (date, table), ' download')
 
 
 def read_data(table_name='daily', start_date='20200201', end_date=None, filter=True, **notcontain):
@@ -161,9 +162,9 @@ def new_list():
 
 
 if __name__ == '__main__':
-    new_list()
+    # new_list()
 
-    # download_data()
+    download_data()
     # if datetime.datetime.today().weekday()%2==0:
     #     stock_basic()
     # # stock_basic()
