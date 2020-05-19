@@ -62,7 +62,7 @@ for year in range(20,21):
     print(start_date%year,'----',end_date%year,'include %s lines'%rawdata.shape[0])
     line_stock=red_line(rawdata)
     print(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]])
-    res=roi(limit,rawdata)
+    # res=roi(limit,rawdata)
 
     # res=yunei(start_date%year,end_date%year)
 
