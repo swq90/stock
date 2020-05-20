@@ -4,7 +4,7 @@ import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data,save_data
 from stock.util.basic import basic
-
+from
 days=2
 
 # 连续两天一字板，或一字板-一字板回封
@@ -30,6 +30,7 @@ def roi(data,rawdata):
     print(data.shape[0])
     all_data = rawdata.copy()
     for pctb in range(-10,11,2):
+
         if pctb==-10:
             all_data['price_buy']=all_data['down_limit']
         elif pctb==10:
@@ -60,12 +61,12 @@ for year in range(20,21):
     rawdata = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
 
     print(start_date%year,'----',end_date%year,'include %s lines'%rawdata.shape[0])
-    line_stock=red_line(rawdata)
+    line_stock=red_line(rawdata).sort_values('trade_date')
     print(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]])
-    # res=roi(limit,rawdata)
+    res=roi(limit,rawdata)
 
     # res=yunei(start_date%year,end_date%year)
 
-#
+
 print()
 
