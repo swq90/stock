@@ -4,7 +4,7 @@ import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data,save_data
 from stock.util.basic import basic
-from
+# from
 days=2
 
 # 连续两天一字板，或一字板-一字板回封
@@ -53,9 +53,42 @@ def roi(data,rawdata):
             summary=pd.concat([summary,detail],ignore_index=True)
             print()
 
-start_date='20%s0401'
+
+def buy_model(red_line,raw_data):
+    res=[]
+    # 单独处理涨跌停数据
+    # 做切分处理，如果满足rate*pre_close>low,卖出，否则delete
+    pre_date=basic().pre_date(red_line[['trade_date']],days=-1)
+    red_line=red_line.merge(pre_date,on=['trade_date'])
+    red_line['trade_date']=red_line['pre_-1_date']
+    red_line.drop(['pre_-1_date'],axis=1,inplace=True)
+    print(red_line.shape)
+    red_line=red_line.iloc[:,:2].merge(raw_data.iloc[:,:11],on=['ts_code','trade_date'])
+    red_line['low_pct']=100*(red_line['low']/red_line['pre_close']-1)
+    for cut in (['down']+list(range(-8,10,2))+['up']):
+        data=raw_data.iloc[:,:11].copy()
+
+        if cut=='down':
+            buy_data=red_line.loc[red_line['low']==red_line['down_limit']].copy()
+            PB='down_limit'
+        elif cut=='up':
+            buy_data=red_line.loc[red_line['low']==red_line['up_limit']].copy()
+            PB='up_limit'
+
+        else:
+            buy_data=red_line.loc[cut>red_line['low_pct']].copy()
+            data['PB']=data['pre_close']*(1+0.01*cut)
+            PB='PB'
+        if buy_data.empty:
+            continue
+        print(cut)
+        roi=sheep.wool2(buy_data,data,PRICEB=PB)
+        res.append([cut,roi.shape[0],roi.iloc[-1,-1]])
+        res=pd.DataFrame(res,columns=['cut','n_days','pct'])
+        return res
+start_date='20%s0101'
 end_date='20%s1231'
-for year in range(20,21):
+for year in range(19,21):
     rawdata = read_data('daily', start_date=start_date%year, end_date=end_date%year).iloc[:,:-2]
     limit = read_data('stk_limit', start_date=start_date%year, end_date=end_date%year)
     rawdata = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
@@ -63,7 +96,12 @@ for year in range(20,21):
     print(start_date%year,'----',end_date%year,'include %s lines'%rawdata.shape[0])
     line_stock=red_line(rawdata).sort_values('trade_date')
     print(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]])
-    res=roi(limit,rawdata)
+
+    # save_data(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]],'连板.txt')
+    res=buy_model(line_stock,rawdata)
+    save_data(res,'%s连板回测效果.csv'%year)
+
+    # res=roi(limit,rawdata)
 
     # res=yunei(start_date%year,end_date%year)
 

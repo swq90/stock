@@ -78,8 +78,10 @@ def process(df):
         # 八个原始特征，未作处理
         # df=np.array(df.sort_values('trade_date').drop(columns=['ts_code','trade_date','pre_close'])).reshape(1,-1)
         # 6原始特征，去线性依赖
-        df=np.array(df.sort_values('trade_date').drop(columns=['ts_code','trade_date','pre_close','pct_chg','change','amount',
-                                                               'vol'])).reshape(1,-1)
+        df=np.array(df.sort_values('trade_date').drop(columns=['ts_code','trade_date','pre_close','pct_chg','change'])).reshape(1,-1)
+        # 4 特征
+        # df=np.array(df.sort_values('trade_date').drop(columns=['ts_code','trade_date','pre_close','pct_chg','change','amount',
+        #                                                        'vol'])).reshape(1,-1)
 
         # df=np.append(df,np.array(data.iloc[i,-1]))
     else :
@@ -97,6 +99,7 @@ if __name__=='__main__':
     s1=sample('603697.SH',start='20200506',end='20200512')
     s2=test_sample(start='20200513',end='20200519')
     vector1=process(s1)
+    print(vector1.shape)
     for ts_code in s2['ts_code'].unique():
         vector2=s2.loc[s2['ts_code'] == ts_code].copy()
         if vector2.shape[0]==5:
@@ -105,7 +108,7 @@ if __name__=='__main__':
     sim_data=pd.DataFrame(sim_data,columns=['ts_code','sim'])
 
     sim_data.sort_values('sim',inplace=True,ascending=False)
-    save_data(sim_data,'4原始特征.csv')
+    save_data(sim_data,'6原始特征.csv')
     print(sim_data.head(10))
     # 回测
     print(sim_data.describe())
