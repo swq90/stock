@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # start, end, days,sell_days = '20190220', '20200224', 2,1
     # start, end, days = '20200120', '20200224', 2
     # start, end, days = '20200210', '20200220', 3
-    start, end, days,sell_days = '20200301', '20201231', 3,0
+    start, end, days,sell_days = '20200501', '20201231', 3,0
     t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
     print(t.raw_data.shape)
     t.raw_data=t.raw_data[(t.raw_data['pct_chg']>=-11)&(t.raw_data['pct_chg']<=11)]

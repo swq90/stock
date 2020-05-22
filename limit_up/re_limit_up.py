@@ -4,7 +4,7 @@ import pandas as pd
 from numpy import arange
 import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
-from stock.sql.data import save_data
+from stock.sql.data import save_data ,read_data
 from stock.util.basic import basic
 def re_limit_up(start_date,end_date):
     rawdata=read_data('daily',start_date=start_date,end_date=end_date)
@@ -23,9 +23,11 @@ def re_limit_up(start_date,end_date):
     data=data.loc[(data['pre_2_red_line']==1)&(data['pre_1_reback_limit']==1)]
     print(data.shape)
     #
+    save_data('破板后回封表现.csv')
     # data=data.loc[(data['up_limit']==data['close'])&(data['open']==data['close'])&(data['low']<data['up_limit'])]
     # print(data.shape)
     data=data.merge(basic().list_days(data,list_days=15))
     print(data.shape)
     wool=sheep.wool(data,rawdata)
     return wool
+re_limit_up('20190101','20191231')
