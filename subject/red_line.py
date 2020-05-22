@@ -88,7 +88,7 @@ def buy_model(red_line,raw_data):
         return res
 start_date='20%s0101'
 end_date='20%s1231'
-for year in range(19,21):
+for year in range(20,21):
     rawdata = read_data('daily', start_date=start_date%year, end_date=end_date%year).iloc[:,:-2]
     limit = read_data('stk_limit', start_date=start_date%year, end_date=end_date%year)
     rawdata = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
@@ -96,8 +96,7 @@ for year in range(19,21):
     print(start_date%year,'----',end_date%year,'include %s lines'%rawdata.shape[0])
     line_stock=red_line(rawdata).sort_values('trade_date')
     print(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]])
-
-    # save_data(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]],'连板.txt')
+    save_data(line_stock.loc[line_stock['trade_date']==line_stock.iloc[-1,-1]],'连板.txt')
     res=buy_model(line_stock,rawdata)
     save_data(res,'%s连板回测效果.csv'%year)
 
