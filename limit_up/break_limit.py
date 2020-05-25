@@ -295,6 +295,53 @@ def mengjie(start_date,end_date):
 
     print()
 
+def jiai(start_date,end_date):
+    # 非涨跌停，两个一字板，一字板回封，收盘-2~-6low==down_limit
+    rawdata = read_data('daily', start_date=start_date, end_date=end_date)
+    limit = read_data('stk_limit', start_date=start_date, end_date=end_date)
+    data = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
+    print(data.shape)
+
+    data['limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
+    data['ulrl']=data.apply(lambda x:1  if ((x['up_limit']==x['close'])&(x['open']==x['close'])&(x['low']<x['close'])) else 0,axis=1)
+    data['nn'] = data.apply(lambda x: 1 if ((x['close'] != x['up_limit']) & (x['close'] != x['down_limit'])) else 0,
+                               axis=1)
+
+    guoli=data.copy()
+    for day in range(3,5):
+        pre = basic().pre_data(data, label=['limit'], pre_days=day)
+        guoli = guoli.merge(pre[['ts_code', 'trade_date', 'pre_%s_limit'%day]], on=['ts_code', 'trade_date'])
+        guoli=guoli.loc[guoli['pre_%s_limit'%day]==1]
+        data=data.loc[data['ts_code'].isin(guoli['ts_code'])]
+        print(day,guoli.shape)
+    pre = basic().pre_data(data, label=['pct_chg','low','down_limit'], pre_days=1)
+    guoli = guoli.merge(pre[['ts_code', 'trade_date','pre_1_low','pre_1_down_limit']], on=['ts_code', 'trade_date'])
+    guoli=guoli.loc[(guoli['pre_1_low']==guoli['pre_1_down_limit'])]
+    data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
+
+    pre = basic().pre_data(data, label=['nn'], pre_days=5)
+    guoli = guoli.merge(pre[['ts_code', 'trade_date', 'pre_5_nn']], on=['ts_code', 'trade_date'])
+    guoli=guoli.loc[(guoli['pre_5_nn']==1)]
+    data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
+
+
+    guoli = guoli.loc[guoli['pre_2_ulrl' ] == 1]
+    data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
+    # 过滤新股
+    save_data(guoli,'jiai.csv')
+    list_days=basic().list_days(guoli,list_days=25)
+    guoli=guoli.merge(list_days,on=['ts_code','trade_date'])
+
+    print(guoli.shape[0])
+    guoli['ma']=guoli['amount']/guoli['vol']*10
+    save_data(guoli,'jiai相似股票数据.csv')
+    for ps in ['high','low','ma']:
+        guoli['%s/pre_close'%ps]=100*(guoli[ps]/guoli['pre_close']-1)
+        print(guoli['%s/pre_close'%ps].mean())
+    print(data.shape)
+
+
+    print()
 #
 # # line_stock()
 # # 开盘涨停中间破板后回封
@@ -309,7 +356,7 @@ def mengjie(start_date,end_date):
 #     save_data(res,'破板后回封次日表现奥美%s-%s.csv'%(start_date%year,end_date%year))
 #     print(res.describe())
 
-guolikeji(start_date,end_date)
-mengjie(start_date,end_date)
-
+# guolikeji(start_date,end_date)
+# mengjie(start_date,end_date)
+jiai(start_date,end_date)
 print()
