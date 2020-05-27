@@ -86,9 +86,9 @@ def buy_model(red_line,raw_data):
         res.append([cut,roi.shape[0],roi.iloc[-1,-1]])
         res=pd.DataFrame(res,columns=['cut','n_days','pct'])
         return res
-start_date='20%s0101'
+start_date='20%s0501'
 end_date='20%s1231'
-for year in range(19,21):
+for year in range(20,21):
     rawdata = read_data('daily', start_date=start_date%year, end_date=end_date%year).iloc[:,:-2]
     limit = read_data('stk_limit', start_date=start_date%year, end_date=end_date%year)
     rawdata = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
