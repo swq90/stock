@@ -6,7 +6,7 @@ from stock.sql.data import read_data,save_data
 from stock.util.basic import basic
 # from
 days=2
-
+sell_price='open'
 # 连续两天一字板，或一字板-一字板回封
 
 
@@ -29,6 +29,14 @@ def process(data,condions):
             data[condion]=data.apply(lambda x: 1 if ((x['close']!=x['up_limit']) &(x['close']!=x['down_limit'])) else 0,axis=1)
         elif condion=='NOU':
             data[condion]=data.apply(lambda x: 1 if ((x['open']!=x['up_limit'])) else 0,axis=1)
+        elif condion=='OU':
+            data[condion]=data.apply(lambda x: 1 if ((x['open']==x['up_limit'])) else 0,axis=1)
+        elif condion=='OR':
+            data[condion]=data.apply(lambda x: 1 if ((x['open']>=x['pre_close'])) else 0,axis=1)
+        elif condion=='OG':
+            data[condion]=data.apply(lambda x: 1 if ((x['open']<x['pre_close'])) else 0,axis=1)
+        elif condion=='OD':
+            data[condion]=data.apply(lambda x: 1 if ((x['open']==x['down_limit'])) else 0,axis=1)
 
     return data
 
@@ -50,9 +58,9 @@ def filter(data,conditions):
 
 
 
-def roi(red_line,raw_data):
+def roi(red_line,raw_data,cut=26,sell_price=sell_price):
     res=[]
-    section=list(range(-24,25,2))
+    section=list(range(-cut,1,2))
     # red_line['low_pct']=100*(red_line['low']/red_line['pre_close']-1)
 
     for pb in section:
@@ -64,7 +72,7 @@ def roi(red_line,raw_data):
         grass = red_line.loc[(red_line[PB] >= red_line['low'])].copy()
         if grass.empty:
             continue
-        raw_data[PB]=grass.apply(lambda x:x['open'] if pb>=0 else x[PB] if  x[PB]>=x['low'] else None,axis=1)
+        raw_data[PB]=raw_data.apply(lambda x:x['open'] if pb>=0 else x[PB] if x[PB]>=x['low'] else None,axis=1)
 
         # for ps in section:
         #     if ps not in raw_data.columns:
@@ -83,10 +91,13 @@ def roi(red_line,raw_data):
         #     if meat.empty:
         #         continue
         #     res.append([pb,ps,meat.shape[0],meat.iloc[-1,-1]])
-        meat=sheep.wool2(grass,raw_data,PRICEB=PB,PRICES='close').dropna()
-        res.append([pb,meat.shape[0],meat.iloc[-1,-1]])
+        meat=sheep.wool2(grass,raw_data,PRICEB=PB,PRICES='open').dropna()
+        if meat.empty:
+            continue
+        # grass_count=grass.groupby('trade_date')['trade_date'].count().reset_index()
+        res.append([pb,meat.shape[0],meat['n'].sum(),meat.iloc[-1,-1]])
 
-    res=pd.DataFrame(res,columns=['pb','n_days','pct'])
+    res=pd.DataFrame(res,columns=['pb','n_days','num','pct'])
     return res
 
 
@@ -129,12 +140,18 @@ def roi2(red_line,raw_data):
     return res
 
 
+#o,ulrl,ull,nn
+#o,ull,ull,nn
+#'NOU','ULRL','ULL','NN'
+# N,'ULL','ULL','NN']
 if __name__=='__main__':
     start_date='20%s0101'
-    end_date='20%s0231'
+    end_date='20%s1231'
+    open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
+    pre_1=['ULRL','ULL']
+
     for year in range(18,21):
         raw_data = read_data('daily', start_date=start_date%year, end_date=end_date%year).iloc[:,:-2]
-
         limit = read_data('stk_limit', start_date=start_date%year, end_date=end_date%year)
         raw_data = raw_data.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
         list_days = basic().list_days(raw_data,list_days=25)
@@ -142,10 +159,15 @@ if __name__=='__main__':
         raw_data = raw_data.merge(list_days, on=['ts_code', 'trade_date'])
         print(start_date%year,'----',end_date%year,'include %s items'%raw_data.shape[0])
 
-        raw_data=process(raw_data,['NOU', 'ULRL','ULL','NN'])
-        red_line=filter(raw_data,['NOU','ULRL','ULL','NN'])
-
-        save_data(red_line,'new%s连板open22.csv'%year)
-        res=roi(red_line,raw_data)
-        save_data(res,'%s连板回溯open22.csv'%year)
+        raw_data=process(raw_data,open_res+pre_1+['NN'])
+        # 开盘非涨停回溯
+        for open in open_res:
+            for pre in pre_1:
+                condition=[open,pre,'ULL','NN']
+                red_line=filter(raw_data,condition)
+                if red_line.empty:
+                    continue
+                save_data(red_line,'%s%s数据.csv'%(year,','.join(condition)))
+                res=roi(red_line,raw_data)
+                save_data(res,'%s%s回溯.csv'%(year,','.join(condition)))
         # res=yunei(start_date%year,end_date%year)
