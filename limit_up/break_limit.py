@@ -5,8 +5,8 @@ import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data,save_data
 from stock.util.basic import basic
 start_date='20190101'
-end_date='20191231'
-days=2
+end_date='20201231'
+# days=2
 def first_limit(data=None, start_date=None, end_date=None, limit_type='up', days=1):
     """
     首板涨停，pre_1_is_roof==0,is_roof==1
@@ -324,6 +324,8 @@ def jiai(start_date,end_date):
     guoli=guoli.loc[(guoli['pre_5_nn']==1)]
     data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
 
+    pre = basic().pre_data(data, label=['ulrl'], pre_days=2)
+    guoli = guoli.merge(pre[['ts_code', 'trade_date', 'pre_2_ulrl']], on=['ts_code', 'trade_date'])
 
     guoli = guoli.loc[guoli['pre_2_ulrl' ] == 1]
     data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
@@ -339,6 +341,50 @@ def jiai(start_date,end_date):
         guoli['%s/pre_close'%ps]=100*(guoli[ps]/guoli['pre_close']-1)
         print(guoli['%s/pre_close'%ps].mean())
     print(data.shape)
+    print()
+
+def guangbai(start_date,end_date):
+    # 两个普通涨停，一个一字板,后日表现
+    rawdata = read_data('daily', start_date=start_date, end_date=end_date)
+    limit = read_data('stk_limit', start_date=start_date, end_date=end_date)
+    data = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit','down_limit']], on=['ts_code', 'trade_date'])
+    print(data.shape)
+    # data['cd'] = data.apply(lambda x: 1 if (x['close'] == x['down_limit'])&(x['open']>0.98*x['pre_close']) else 0, axis=1)
+    data['open_less_limit']= data.apply(lambda x: 1 if (x['open']!=x['up_limit'])&(x['close']==x['up_limit'])&(x['open'] >= (x['pre_close']*1.05)) else 0, axis=1)
+    data['line_limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
+    data['or_limit']=data.apply(lambda x: 1 if( x['open'] != x['up_limit'])&(x['close'] == x['up_limit']) else 0, axis=1)
+    data['nn'] = data.apply(lambda x: 1 if (x['high'] < x['up_limit']) & (x['close'] > x['down_limit']) else 0, axis=1)
+
+
+    guoli=data.copy()
+    for day in range(len(days)):
+        if not day:
+            continue
+        pre = basic().pre_data(data, label=[days[day]], pre_days=day+1)
+        guoli = guoli.merge(pre[['ts_code', 'trade_date', 'pre_%s_%s'%(day+1,days[day])]], on=['ts_code', 'trade_date'])
+        guoli=guoli.loc[guoli['pre_%s_%s'%(day+1,days[day])]==1]
+        data=data.loc[data['ts_code'].isin(guoli['ts_code'])]
+        print(day,guoli.shape)
+
+    save_data(guoli,'guangbo.csv')
+
+    # 过滤新股
+    list_days=basic().list_days(guoli,list_days=30)
+    guoli=guoli.merge(list_days,on=['ts_code','trade_date'])
+
+    print(guoli.shape[0])
+    guoli['ma']=guoli['amount']/guoli['vol']*10
+    save_data(guoli,'guangbo相似股票数据%s.csv'%end_date)
+    for ps in ['high','low','ma','open','close']:
+        guoli['%s/pre_close'%ps]=100*(guoli[ps]/guoli['pre_close']-1)
+        print(ps,guoli['%s/pre_close'%ps].mean())
+    print('close_limit_up:',guoli.loc[guoli['close']==guoli['up_limit']].shape[0]/guoli.shape[0])
+    print('open_limitup:',guoli.loc[guoli['open']==guoli['up_limit']].shape[0]/guoli.shape[0])
+    print('line_red:',guoli.loc[(guoli['open']==guoli['up_limit'])&(guoli['close']==guoli['up_limit'])&(guoli['low']==guoli['up_limit'])].shape[0]/guoli.shape[0])
+
+
+
+    print(guoli.shape)
 
 
     print()
@@ -358,5 +404,8 @@ def jiai(start_date,end_date):
 
 # guolikeji(start_date,end_date)
 # mengjie(start_date,end_date)
-jiai(start_date,end_date)
+days=[None,'open_less_limit','line_limit','or_limit','nn']
+# days=['cd','or_limit'
+# ,'nn']
+guangbai(start_date,end_date)
 print()
