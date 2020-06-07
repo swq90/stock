@@ -9,11 +9,26 @@ from stock.util.basic import basic
 
 # from
 # days = 2
-# selling = 'mid=(high+low)/2'
-selling = 'open'
+selling = 'mid=(high+low)/2'
+# selling = 'open'
 today = str(datetime.datetime.today().date())
+# 1:切分10类
+# open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
+# pre_1 = ['URL', 'ULL']
+# con=['ULL','NN']
+# open_res = [ 'OR']
+# pre_1 = ['ULL']
+# con=['ULL','NN']
 
-
+# open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
+# pre_1 = []
+# con = ['ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'NN']
+# open_res = ['CD']  # 002920
+# pre_1 = ['CU']
+# con = ['NN']
+open_res = ['ULL']  # 002187
+pre_1 = ['CU']
+con = ['CU','NN']
 # 连续两天一字板，或一字板-一字板回封
 
 
@@ -28,6 +43,9 @@ def process(data, condions):
     # limit=read_data('stk_limit', start_date=data[['trade_date']].min(), end_date=data[['trade_date']].max())
     # data = data.merge(limit[['ts_code', 'trade_date', 'up_limit', 'down_limit']], on=['ts_code', 'trade_date'])
     for conditon in condions:
+        # if '=' in conditon:
+        #     s=conditon.split('=')
+        #     data[conditon]=data.apply(lambda x:1 if(((x[s[0]]/x['pre_close']-1)*100)>=float(s[1].split(',')[0]))&(((x[s[0]]/x['pre_close']-1)*100)<=float(s[1].split(',')[1])) else 0,axis=1]
         if conditon == 'ULL':
             data[conditon] = data.apply(
                 lambda x: 1 if ((x['up_limit'] == x['close']) & (x['low'] == x['close'])) else 0,
@@ -55,6 +73,12 @@ def process(data, condions):
                 lambda x: 1 if ((x['open'] < x['pre_close']) & (x['open'] > x['down_limit'])) else 0, axis=1)
         elif conditon == 'OD':
             data[conditon] = data.apply(lambda x: 1 if ((x['open'] == x['down_limit'])) else 0, axis=1)
+        elif conditon == 'CU':#close涨停，open非涨停
+            data[conditon] = data.apply(lambda x: 1 if ((x['close'] == x['up_limit'])&(x['open'] != x['up_limit'])) else 0, axis=1)
+        elif conditon == 'CD':#close跌停，open非跌停
+            data[conditon] = data.apply(lambda x: 1 if ((x['close'] == x['down_limit'])&(x['open'] != x['down_limit'])) else 0, axis=1)
+
+
 
     return data
 
@@ -167,17 +191,7 @@ def roi2(red_line, raw_data):
 if __name__ == '__main__':
     start_date = '20%s0101'
     end_date = '20%s1231'
-    # 1:切分10类
-    # open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
-    # pre_1 = ['URL', 'ULL']
-    # con=['ULL','NN']
-    # open_res = [ 'OR']
-    # pre_1 = ['ULL']
-    # con=['ULL','NN']
 
-    open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
-    pre_1 = []
-    con = ['ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'NN']
 
     for year in range(18, 21):
         raw_data = read_data('daily', start_date=start_date % year, end_date=end_date %( year)).iloc[:, :-2]

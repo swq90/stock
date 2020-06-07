@@ -39,7 +39,7 @@ def process_data():
     data['pct']=data['close']/data['pre_%s_close'%UP_DAYS]-1
     data=data.loc[data['pct']>UP_PCT][['ts_code','trade_date','pct']]
     print(data.shape)
-    datatest=pd.DataFrame()
+    dataset=pd.DataFrame()
 
     def rt_data(up_data):
         for i in range(up_data.shape[0]):
@@ -66,15 +66,15 @@ def sample(ts_code,start=START,end=END):
     # vector_a=vector_a.merge(pre_data[['ts_code','trade_date','pre_%s_close'%UP_DAYS]],on=['ts_code','trade_date']).sort_values('trade_date').reset_index(drop=True)
     return vector_a
 
-def test_sample(start=START,end=END):
+def sim_sample(start=START,end=END):
     df=read_data('daily',start_date=start,end_date=end)
     return df
 
 
 
-def process(df):
+def process(df,days):
     # dataset=pd.DataFrame()
-    if df.shape[0]==5:
+    if df.shape[0]==days:
         # 八个原始特征，未作处理
         # df=np.array(df.sort_values('trade_date').drop(columns=['ts_code','trade_date','pre_close'])).reshape(1,-1)
         # 6原始特征，去线性依赖
@@ -92,27 +92,31 @@ if __name__=='__main__':
     # a=cos_sim([100,100,200],[100,100,100])
     # b=cos_sim([100,2],[100,1])
     #
-    #
-    #
-
     sim_data=[]
-    s1=sample('603697.SH',start='20200506',end='20200512')
-    s2=test_sample(start='20200513',end='20200519')
-    vector1=process(s1)
+    # s1=sample('603697.SH',start='20200506',end='20200512')
+    # s2=sim_sample(start='20200513',end='20200519')
+    sample_code='002187.SZ'
+    days=6
+    s1=sample(sample_code,start='20200521',end='20200528')
+    s2=sim_sample(start='20200527',end='20200603')
+    #上涨前n日区间
+    vector1=process(s1,days=days)
+
     print(vector1.shape)
     for ts_code in s2['ts_code'].unique():
         vector2=s2.loc[s2['ts_code'] == ts_code].copy()
-        if vector2.shape[0]==5:
+        if vector2.shape[0]==days:
             sim_data.append([ts_code,cos_sim(vector1,process(vector2))])
 
     sim_data=pd.DataFrame(sim_data,columns=['ts_code','sim'])
 
     sim_data.sort_values('sim',inplace=True,ascending=False)
-    save_data(sim_data,'6原始特征.csv')
+    save_data(sim_data,'%s6原始特征.csv'%sample_code)
     print(sim_data.head(10))
     # 回测
     print(sim_data.describe())
 
+    # sim_data['trade_date']='20200519'
     # sim_data['trade_date']='20200519'
     # roi=sheep.wool2(sim_data.head(10),read_data('daily',start_date='20200515'))
     print()
