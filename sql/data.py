@@ -14,7 +14,7 @@ from tushare.util import upass
 
 token = upass.get_token()
 tool = ts.pro.client.DataApi(token)
-engine = create_engine('postgresql://nezha:nezha@10.0.0.5:5432/stock', echo=False)
+engine = create_engine('postgresql://nezha:nezha@10.0.0.7:5432/stock', echo=False)
 
 
 def download_data(start_date=None, end_date=None, trade_date=None, days=3, tables=['daily', 'stk_limit', 'limit_list']):
@@ -25,6 +25,7 @@ def download_data(start_date=None, end_date=None, trade_date=None, days=3, table
             start_date = str(datetime.datetime.today().date() - datetime.timedelta(days)).replace('-', '')
         trade_cal = tool.query('trade_cal', start_date=start_date, end_date=end_date, is_open='1')
     else:
+
         trade_cal = tool.query('trade_cal', start_date=trade_date, end_date=trade_date, is_open='1')['cal_date']
     if trade_cal.empty:
         return
