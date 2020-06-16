@@ -9,10 +9,12 @@ from stock.util.basic import basic
 
 # from
 # days = 2
-selling = 'mid=(high+low)/2'
-# selling = 'open'
 today = str(datetime.datetime.today().date())
+# selling = 'mid=(high+low)/2'
+selling = 'open'
+
 # 1:切分10类
+
 # open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
 # pre_1 = ['URL', 'ULL']
 # con=['ULL','NN']
@@ -20,15 +22,20 @@ today = str(datetime.datetime.today().date())
 # pre_1 = ['ULL']
 # con=['ULL','NN']
 
-# open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']  # 开盘非涨停，涨停，红盘，绿盘，跌停
+  # 开盘非涨停，涨停，红盘，绿盘，跌停
 # pre_1 = []
 # con = ['ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'ULL', 'NN']
 # open_res = ['CD']  # 002920
 # pre_1 = ['CU']
 # con = ['NN']
-open_res = ['ULL']  # 002187
-pre_1 = ['CU']
-con = ['CU','NN']
+# open_res = ['ULL']  # 002187
+# open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']
+# pre_1 = ['CU','ULL','URL']
+# con = ['CU','NN']
+con = [ 'UL', 'UL','NN']
+open_res = ['open_pct']  # 002187
+pre_1 = ['ULL']
+
 # 连续两天一字板，或一字板-一字板回封
 
 
@@ -54,7 +61,10 @@ def process(data, condions):
             data[conditon] = data.apply(lambda x: 1 if (
                     (x['up_limit'] == x['close']) & (x['open'] == x['close']) & (x['low'] < x['close'])) else 0,
                                         axis=1)
-
+        elif conditon == 'UL':
+            data[conditon] = data.apply(lambda x: 1 if
+                    x['up_limit'] == x['close']  else 0,
+                                        axis=1)
         elif conditon == 'ULRL':
             data[conditon] = data.apply(
                 lambda x: 1 if ((x['up_limit'] == x['close']) & (x['open'] == x['close'])) else 0, axis=1)
@@ -77,11 +87,16 @@ def process(data, condions):
             data[conditon] = data.apply(lambda x: 1 if ((x['close'] == x['up_limit'])&(x['open'] != x['up_limit'])) else 0, axis=1)
         elif conditon == 'CD':#close跌停，open非跌停
             data[conditon] = data.apply(lambda x: 1 if ((x['close'] == x['down_limit'])&(x['open'] != x['down_limit'])) else 0, axis=1)
-
-
+        elif conditon == 'open_pct':
+            data[conditon+'-8'] = data.apply(
+            lambda x: 1 if ((x['open'] > x['down_limit']) & (100*(x['open'] /x['pre_close']-1)<=-8)) else 0, axis=1)
+            data[conditon+'10'] = data.apply(
+            lambda x: 1 if ((x['open'] < x['up_limit']) & (100*(x['open'] /x['pre_close']-1)>8)) else 0, axis=1)
+            for p in range(-6,10,2):# close跌停，open非跌停
+                data[conditon+'%s'%p] = data.apply(
+            lambda x: 1 if ((100*(x['open'] /x['pre_close']-1)>(p-2)) & (100*(x['open'] /x['pre_close']-1)<=p)) else 0, axis=1)
 
     return data
-
 
 def filter(data, conditions):
     # [0,'ULRL','ULL']
@@ -193,7 +208,8 @@ if __name__ == '__main__':
     end_date = '20%s1231'
 
 
-    for year in range(18, 21):
+    for year in range(19, 20):
+        trace=pd.DataFrame()
         raw_data = read_data('daily', start_date=start_date % year, end_date=end_date %( year)).iloc[:, :-2]
         limit = read_data('stk_limit', start_date=start_date % year, end_date=end_date % year)
         raw_data = raw_data.merge(limit[['ts_code', 'trade_date', 'up_limit', 'down_limit']],
@@ -207,19 +223,33 @@ if __name__ == '__main__':
 
         raw_data = process(raw_data, set(open_res + pre_1 + con))
         # 开盘非涨停回溯
+        if 'open_pct' in open_res:
+            open_res=['open_pct'+'%s'%x for x in range(-8,11,2)]
+        print(open_res)
         for open in open_res:
             if not pre_1:
                 pre_1.append(con.pop(0))
+
             for pre in pre_1:
                 conditions = [open, pre] + con
                 red_line = filter(raw_data, conditions)
-                if red_line.empty:
-                    continue
                 print(conditions)
-                save_data(red_line, '%s%s-%s数据.csv' % (year, ','.join(conditions), today),fp_date=True)
+                if red_line.empty:
+                    print('no stock')
+                    continue
+
+                save_data(red_line, '%s%sraw_data.csv' % (year, ','.join(conditions)),fp_date=True)
                 res = roi(red_line, raw_data, selling_price=selling.split('=')[0], cut_left=-24, cut_right=4, step=2)
                 if res.empty:
                     print('当前条件下无数据')
                     continue
-                save_data(res, '%s%s-%s回溯%s.csv' % (year, ','.join(conditions), selling.split('=')[0], today),fp_date=True)
+                save_data(res,'trace_back_to%s%s-%s%s.csv' % (year, ','.join(conditions), selling.split('=')[0], today),
+                          fp_date=True)
+                res.rename(columns = {"n_days": "n_days_%s%s"% (year, ','.join(conditions)),"num": "num_%s%s"% (year, ','.join(conditions)),"pct": "pct_%s%s"% (year, ','.join(conditions))},inplace=True)
+
+                if trace.empty:
+                    trace=res.copy()
+                else:
+                    trace=trace.merge(res,how='outer',on='pb')
+        save_data(trace, 'trace_back_to%s%s%s.csv' % (year, selling.split('=')[0], today),fp_date=True)
         # res=yunei(start_date%year,end_date%year)
