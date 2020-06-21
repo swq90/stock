@@ -466,9 +466,81 @@ def jiangxicy(start_date,end_date):
 
     print(guoli.shape)
 
+# def lianban(start_date, end_date):
+#     # 两个普通涨停
+#
+#     rawdata = read_data('daily', start_date=start_date, end_date=end_date)
+#     # ma = pd.read_csv('D:\\workgit\\stock\\data\\break_limit\\' + 'ma%s.csv' % start_date, index_col=0,
+#     #                  dtype={'trade_date': object})
+#     # ma=pd.DataFrame()
+#     # for ts_code in rawdata['ts_code'].unique():
+#     #     ma=pd.concat([ma,ts.pro_bar(ts_code,start_date=start_date,end_date=end_date,ma=[5])],ignore_index=True)
+#     # save_data(ma[['ts_code', 'trade_date', 'ma5']],'ma%s.csv'%start_date)
+#     limit = read_data('stk_limit', start_date=start_date, end_date=end_date)
+#     data = rawdata.merge(limit[['ts_code', 'trade_date', 'up_limit', 'down_limit']], on=['ts_code', 'trade_date'])
+#     # data = data.merge(ma[['ts_code', 'trade_date', 'ma5']], on=['ts_code', 'trade_date'])
+#
+#     print(data.shape)
+#     # data['cd'] = data.apply(lambda x: 1 if (x['close'] == x['down_limit'])&(x['open']<0.95*x['pre_close']) else 0, axis=1)
+#     # data['open_less_limit']= data.apply(lambda x: 1 if (x['open']!=x['up_limit'])&(x['close']==x['up_limit'])&(x['open'] >= (x['pre_close']*1.05)) else 0, axis=1)
+#     data['line_limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
+#     # data['re_limit']=data.apply(lambda x: 1 if (x['close'] == x['up_limit']) & (x['close'] == x['open'])&(x['low'] < x['up_limit']) else 0, axis=1)
+#     # data['or_limit'] = data.apply(
+#     #     lambda x: 1 if (x['open'] != x['up_limit']) & (x['close'] == x['up_limit']) else 0, axis=1)
+#     data['nn'] = data.apply(lambda x: 1 if (x['high'] < x['up_limit']) & (x['close'] > x['down_limit']) else 0,
+#                             axis=1)
+#     # data['c_c'] = data.apply(lambda x: 1 if (x['open'] > x['pre_close']) & (x['open'] != x['up_limit'])&(x['pct_chg']>=-7)&(x['pct_chg']<=-5) else 0, axis=1)
+#     # data['c_c'] = data.apply(lambda x: 1 if (x['high']==x['up_limit'])&(x['open'] > x['pre_close']) &(x['pct_chg']>=0)&(x['close']<x['up_limit']) else 0, axis=1)
+#
+#     # data['c_c'] = data.apply(lambda x: 1 if ((x['open']/ x['pre_close']-1)>-0.05) &((x['close']/ x['pre_close']-1)>-0.05) &(x['open']<x['pre_close']) else 0, axis=1)
+#     # data['c_c1'] = data.apply(lambda x: 1 if (abs(x['open']/ x['pre_close']-1)<0.02) &((x['close']/ x['pre_close']-1)>-0.05) &(x['close']<x['pre_close']) else 0, axis=1)
+#     data['all']=1
+#     # data['m_ma5'] = data.apply(
+#     #     lambda x: 1 if (x['close'] > x['ma5'
+#     #     ]) & (x['pct_chg'] <= -4) & (x['pct_chg'] >= -6) else 0, axis=1)
+#
+#     guoli = data.copy()
+#     for day in range(len(days)):
+#         if not days[day]:
+#             continue
+#         pre = basic().pre_data(data, label=[days[day]], pre_days=day + 1)
+#         guoli = guoli.merge(pre[['ts_code', 'trade_date', 'pre_%s_%s' % (day + 1, days[day])]],
+#                             on=['ts_code', 'trade_date'])
+#         guoli = guoli.loc[guoli['pre_%s_%s' % (day + 1, days[day])] == 1]
+#         data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
+#         print(day, guoli.shape)
+#
+#     save_data(guoli, 'lianban.csv',fp_date=True)
+#
+#     # 过滤新股
+#     list_days = basic().list_days(guoli, list_days=30)
+#
+#     guoli = guoli.merge(list_days, on=['ts_code', 'trade_date'])
+#
+#     print(guoli.shape[0])
+#     guoli['ma'] = guoli['amount'] / guoli['vol'] * 10
+#     save_data(guoli, 'lianban%s%s.csv' % (','.join(days), end_date),fp_date=True)
+#     for ps in ['high', 'low', 'ma', 'open', 'close']:
+#         guoli['%s/pre_close' % ps] = 100 * (guoli[ps] / guoli['pre_close'] - 1)
+#         print(ps, guoli['%s/pre_close' % ps].mean())
+#     print('close_limit_up:', guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.shape[0])
+#     print('open_limitup:', guoli.loc[guoli['open'] == guoli['up_limit']].shape[0] / guoli.shape[0])
+#     print('line_red:', guoli.loc[(guoli['open'] == guoli['up_limit']) & (guoli['close'] == guoli['up_limit']) & (
+#                 guoli['low'] == guoli['up_limit'])].shape[0] / guoli.shape[0])
+#
+#     print(guoli.shape)
+#     guoli=guoli.loc[(guoli['open']==guoli['up_limit'])&(guoli['low']<guoli['up_limit'])]
+#     rawdata=rawdata.loc[rawdata['ts_code'].isin(guoli['ts_code'].unique())]
+#     for pct in range(0,9,1):
+#         rawdata['pb']=rawdata['open']-rawdata['pre_close']*pct*0.01
+#         rawdata['pb']=rawdata.apply(lambda x:x['pb'] if x['pb']>=x['low'] else None,axis=1)
+#         rawdata['ps']=rawdata['high']/2+rawdata['low']/2
+#         res=sheep.wool2(guoli,rawdata,PRICEB='pb',PRICES='ps')
+#         save_data(res,'open=limit-%s-sell-mid.csv'%pct,fp_date=True)
+#     return guoli
+
 def lianban(start_date, end_date):
     # 两个普通涨停
-
     rawdata = read_data('daily', start_date=start_date, end_date=end_date)
     # ma = pd.read_csv('D:\\workgit\\stock\\data\\break_limit\\' + 'ma%s.csv' % start_date, index_col=0,
     #                  dtype={'trade_date': object})
@@ -481,20 +553,26 @@ def lianban(start_date, end_date):
     # data = data.merge(ma[['ts_code', 'trade_date', 'ma5']], on=['ts_code', 'trade_date'])
 
     print(data.shape)
-    data['cd'] = data.apply(lambda x: 1 if (x['close'] == x['down_limit'])&(x['open']<0.95*x['pre_close']) else 0, axis=1)
+    # data['cd'] = data.apply(lambda x: 1 if (x['close'] == x['down_limit'])&(x['open']<0.95*x['pre_close']) else 0, axis=1)
     # data['open_less_limit']= data.apply(lambda x: 1 if (x['open']!=x['up_limit'])&(x['close']==x['up_limit'])&(x['open'] >= (x['pre_close']*1.05)) else 0, axis=1)
     data['line_limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
-    data['re_limit']=data.apply(lambda x: 1 if (x['close'] == x['up_limit']) & (x['close'] == x['open'])&(x['low'] < x['up_limit']) else 0, axis=1)
-    data['or_limit'] = data.apply(
-        lambda x: 1 if (x['open'] != x['up_limit']) & (x['close'] == x['up_limit']) else 0, axis=1)
-    data['nn'] = data.apply(lambda x: 1 if (x['high'] < x['up_limit']) & (x['close'] > x['down_limit']) else 0,
+    # # data['re_limit']=data.apply(lambda x: 1 if (x['close'] == x['up_limit']) & (x['close'] == x['open'])&(x['low'] < x['up_limit']) else 0, axis=1)
+    # data['or_limit'] = data.apply(
+    #     lambda x: 1 if (x['open'] != x['up_limit']) & (x['close'] == x['up_limit']) else 0, axis=1)
+    data['c_limit']=data.apply(
+        lambda x: 1 if (x['close'] == x['up_limit']) else 0, axis=1)
+    data['nn'] = data.apply(lambda x: 1 if (x['close'] < x['up_limit']) & (x['close'] > x['down_limit']) else 0,
                             axis=1)
-    # data['c_c'] = data.apply(lambda x: 1 if (x['open'] > x['pre_close']) & (x['open'] != x['up_limit'])&(x['pct_chg']>=-7)&(x['pct_chg']<=-5) else 0, axis=1)
+    # data['c_c'] = data.apply(lambda x: 1 if (x['open']== x['up_limit']) & (x['low'] == x['down_limit'])&(x['pct_chg']<0) else 0, axis=1)
+    # data['c_c'] = data.apply(lambda x: 1 if (x['up_limit']==x['open']) &(0<=x['pct_chg']) &(x['pct_chg']<=5)else 0, axis=1)
+    data['c_c3'] = data.apply(lambda x: 1 if (x['down_limit']==x['close']) &(x['open']<x['pre_close']) else 0, axis=1)
 
-    data['c_c'] = data.apply(lambda x: 1 if (x['open'] > x['pre_close']) &(x['pct_chg']>=7)&(x['pct_chg']<=9) else 0, axis=1)
+    # data['c_c'] = data.apply(lambda x: 1 if (0>(x['open']/ x['pre_close']-1)>-0.05) &(-4>(x['pct_chg']-1)>-8)  else 0, axis=1)
+    # data['c_c1'] = data.apply(lambda x: 1 if (-4<(x['open']/ x['pre_close']-1)<-0.02) &((-2>x['pct_chg']>-5) ) else 0, axis=1)
+    # data['all']=1
     # data['m_ma5'] = data.apply(
-    #     lambda x: 1 if (x['close'] > x['ma5']) & (x['pct_chg'] <= -4) & (x['pct_chg'] >= -6) else 0, axis=1)
-
+    #     lambda x: 1 if (x['close'] > x['ma5'
+    #     ]) & (x['pct_chg'] <= -4) & (x['pct_chg'] >= -6) else 0, axis=1)
     guoli = data.copy()
     for day in range(len(days)):
         if not days[day]:
@@ -506,29 +584,38 @@ def lianban(start_date, end_date):
         data = data.loc[data['ts_code'].isin(guoli['ts_code'])]
         print(day, guoli.shape)
 
-    save_data(guoli, 'lianban.csv')
+    # save_data(guoli, 'lianban.csv',fp_date=True)
 
     # 过滤新股
     list_days = basic().list_days(guoli, list_days=30)
-
     guoli = guoli.merge(list_days, on=['ts_code', 'trade_date'])
-
     print(guoli.shape[0])
     guoli['ma'] = guoli['amount'] / guoli['vol'] * 10
-    save_data(guoli, 'lianban%s%s.csv' % (','.join(days), end_date))
+    guoli=guoli.loc[guoli['up_limit']/guoli['pre_close']>=1.08]
+    save_data(guoli, 'lianban%s%s.csv' % (','.join(days), end_date),fp_date=True)
     for ps in ['high', 'low', 'ma', 'open', 'close']:
         guoli['%s/pre_close' % ps] = 100 * (guoli[ps] / guoli['pre_close'] - 1)
         print(ps, guoli['%s/pre_close' % ps].mean())
+        # print(ps, guoli['%s/pre_close' % ps].describe())
+
     print('close_limit_up:', guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.shape[0])
     print('open_limitup:', guoli.loc[guoli['open'] == guoli['up_limit']].shape[0] / guoli.shape[0])
+
     print('line_red:', guoli.loc[(guoli['open'] == guoli['up_limit']) & (guoli['close'] == guoli['up_limit']) & (
                 guoli['low'] == guoli['up_limit'])].shape[0] / guoli.shape[0])
-
-    print(guoli.shape)
-
-    print()
-
-
+    print('high_limitup:', guoli.loc[guoli['high'] == guoli['up_limit']].shape[0] / guoli.shape[0])
+    print('dont keep up limit ',guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.loc[guoli['high'] == guoli['up_limit']].shape[0] )
+    print('pobanhoupct',guoli.loc[guoli['open'] == guoli['up_limit']]['pct_chg'].mean())
+    # print(guoli.shape)
+    # guoli=guoli.loc[(guoli['open']==guoli['up_limit'])&(guoli['low']<guoli['up_limit'])]
+    # rawdata=rawdata.loc[rawdata['ts_code'].isin(guoli['ts_code'].unique())]
+    # for pct in range(0,9,1):
+    #     rawdata['pb']=rawdata['open']-rawdata['pre_close']*pct*0.01
+    #     rawdata['pb']=rawdata.apply(lambda x:x['pb'] if x['pb']>=x['low'] else None,axis=1)
+    #     rawdata['ps']=rawdata['high']/2+rawdata['low']/2
+    #     res=sheep.wool2(guoli,rawdata,PRICEB='pb',PRICES='ps')
+    #     save_data(res,'open=limit-%s-sell-mid.csv'%pct,fp_date=True)
+    return guoli
 print()
 #
 # # line_stock()
@@ -564,7 +651,11 @@ print()
 # days=['or_limit','or_limit','nn']
 # days=['line_limit','line_limit','nn']
 # days=['c_c','line_limit','line_limit','nn']
-days=['c_c','re_limit','line_limit','nn']
+# days=['c_c','re_limit','line_limit','or_limit','nn']
+# days=['c_c','line_limit','line_limit']#603608
+days=['c_c3','line_limit','c_limit','c_limit','c_limit']#603608
+# days=['c_c','or_limit','or_limit','or_limit','nn']
+# days=['c_c1','or_limit','nn']
+save_data(lianban(start_date,end_date), '600824%s%s.csv' % (','.join(days), end_date), fp_date=True)
 
-lianban(start_date,end_date)
 print()
