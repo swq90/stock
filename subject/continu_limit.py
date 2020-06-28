@@ -88,6 +88,7 @@ def next_performance(df, data, ):
         # print(ps, df['%s/pre_close' % ps].describe())
 
     res['close_up_limit'] = df.loc[df['close'] == df['up_limit']].shape[0] / df.shape[0]
+
     res['close_down_limit'] = df.loc[df['close'] == df['down_limit']].shape[0] / df.shape[0]
 
 
@@ -105,7 +106,33 @@ def next_performance(df, data, ):
 
     return res
 
+def roi2(df, raw_data,  selling_price ,  cut_left=-24,cut_right=1, step=2       ):
+    res = []
+    section = list(range(cut_left, cut_right, 2))
 
+    raw_data = raw_data.loc[raw_data['ts_code'].isin(df['ts_code'])]
+    for pb in section:
+        if df.empty:
+            continue
+        PB = 'PB'
+        df.loc[:, PB] = df['open'] * (1 + 0.01 * pb)
+        raw_data.loc[:, PB] = raw_data['open'] * (1 + 0.01 * pb)
+        grass = df.loc[(df[PB] >= df['low'])].copy()
+        if grass.empty:
+            continue
+        raw_data.loc[:, PB] = raw_data.apply(lambda x: x['open'] if pb >= 0 else x[PB] if x[PB] >= x['low'] else None,
+                                             axis=1)
+
+
+        meat = sheep.avg_yeild(grass, raw_data, PRICEB=PB, PRICES=selling_price).dropna()
+        if meat.empty:
+            continue
+
+        print([pb, meat['pct'].mean(), meat['n'].sum()])
+        res.append([pb, meat['pct'].mean(), meat['n'].sum()])
+
+    res = pd.DataFrame(res, columns=['pb', 'pct', 'nums',])
+    return res
 def process(df, expressions):
     # print(len(expressions))
     # df.sort_values('trade_date',inplace=True )
@@ -148,6 +175,15 @@ def process(df, expressions):
 def reform_performance(res, label_name):
    performance_table[label_name] = pd.Series(res)
 
+def open_cut(df,label,new_label=''):
+    if not new_label:
+        new_label='%s_cut'%label
+        df['%s_pct'%label]=df.apply(lambda x:1000 if x[label]==x[UP_LIMIT] else -1000 if x[label]==x[DOWN_LIMIT] else 100*(x[label]/[PRE_CLOSE]-1),axis=1)
+    cuts=[min(df['%s_pct'%label])-1]+list(range(-10,10))+[max(df['%s_pct'%label])+1]
+    df[new_label]=pd.cut(df[label],cuts,right=False)
+    print(df.groupby(by=new_label).size())
+
+
 
 if __name__ == '__main__':
     raw_data = read_data('daily', start_date=start_date, end_date=end_date).merge(
@@ -155,19 +191,25 @@ if __name__ == '__main__':
             ['ts_code', 'trade_date', 'up_limit', 'down_limit']],
         on=['ts_code', 'trade_date'])
     # pre = [open_up_limit, open_down_limit, ]
-    # for c in [red_line_limit, red_t_limit]:
-    #     conditon = [n_n, red_line_limit, c]
+    # for c in [df_limit, red_t_limit]:
+    #     conditon = [n_n, df_limit, c]
     #     data = process(raw_data, conditon)
     #     res = next_performance(data, raw_data)
     #     reform_performance(res, '-'.join([x.__name__ for x in conditon]))
 
-    conditon = [n_n,  up_limit,red_line_limit, lambda x: (x[OPEN] / x[PRE_CLOSE] <= 1.06) &(x[OPEN] / x[PRE_CLOSE] > 1.02)& (x[PCT_CHG] >= -6)& (x[PCT_CHG] <=-2)]
+    # conditon = [n_n,  up_limit,red_line_limit, lambda x: (x[OPEN] / x[PRE_CLOSE] <= 1.06) &(x[OPEN] / x[PRE_CLOSE] > 1.02)& (x[PCT_CHG] >= -6)& (x[PCT_CHG] <=-2)]
+    conditon = [n_n,  up_limit,up_limit, lambda x: (x[OPEN] / x[PRE_CLOSE] >=0.96) &(x[OPEN] / x[PRE_CLOSE] < 1) &(x[CLOSE] ==x[UP_LIMIT])]
+
     data = process(raw_data, conditon)
+    open_cut(data.loc[data['close'] == data['up_limit']],'open')
+
     res = next_performance(data, raw_data)
     reform_performance(res, '-'.join([x.__name__ for x in conditon]))
+
+
     save_data(data, '%s%s%sdata2.csv' % (
-    '603101', '~'.join([x.__name__ if 'lambda' not in x.__name__ else 'lambda' for x in conditon]), end_date),
+    '002571', '~'.join([x.__name__ if 'lambda' not in x.__name__ else 'lambda' for x in conditon]), end_date),
               fp_date=True)
-    save_data(performance_table, '%s%s%sperformance2.csv' % ('603101', '~'.join([x.__name__ if 'lambda' not in x.__name__ else 'lambda' for x in conditon]), end_date),
+    save_data(performance_table, '%s%s%sperformance.csv' % ('002571', '~'.join([x.__name__ if 'lambda' not in x.__name__ else 'lambda' for x in conditon]), end_date),
               fp_date=True)
 
