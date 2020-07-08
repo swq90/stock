@@ -14,10 +14,10 @@ from tushare.util import upass
 
 token = upass.get_token()
 tool = ts.pro.client.DataApi(token)
-engine = create_engine('postgresql://nezha:nezha@10.0.0.7:5432/stock', echo=False)
+engine = create_engine('postgresql://nezha:nezha@10.0.0.3:5432/stock', echo=False)
 
 
-def download_data(start_date=None, end_date=None, trade_date=None, days=3, tables=['daily', 'stk_limit', 'limit_list']):
+def download_data(start_date=None, end_date=None, trade_date=None, days=10, tables=['daily', 'stk_limit', 'limit_list']):
     if trade_date is None:
         if not end_date:
             end_date = str(datetime.datetime.today().date()).replace('-', '')
