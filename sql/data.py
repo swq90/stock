@@ -1,3 +1,4 @@
+# 基础常用数据自动备份，读取常用数据，过滤板块，亏损股票，自定义文件保存，
 import os
 import sys
 import datetime
@@ -17,7 +18,14 @@ tool = ts.pro.client.DataApi(token)
 engine = create_engine('postgresql://nezha:nezha@10.0.0.3:5432/stock', echo=False)
 
 
-def download_data(start_date=None, end_date=None, trade_date=None, days=10, tables=['daily', 'stk_limit', 'limit_list']):
+def days(start_date, end_date=''):
+    end_date = datetime.datetime.strptime(end_date, '%Y%m%d') if end_date else datetime.datetime.today()
+    start_date = datetime.datetime.strptime(start_date, '%Y%m%d')
+    # print(start_date,end_date,(end_date-start_date).days)
+    return (end_date - start_date).days
+
+
+def download_data(start_date=None, end_date=None, trade_date=None, days=4, tables=['daily', 'stk_limit', 'limit_list']):
     if trade_date is None:
         if not end_date:
             end_date = str(datetime.datetime.today().date()).replace('-', '')
@@ -62,7 +70,7 @@ def read_data(table_name='daily', start_date='20200201', end_date=None, filter=T
     data = pd.read_sql_query(sql, con=engine)
     data.drop_duplicates(inplace=True)
     if filter and ('ts_code' in data.columns):
-        NOTCONTAIN = sfilter(end_date, name="st|ST", market="科创板")
+        NOTCONTAIN = sfilter(end_date, name="st|ST|退", market="科创板")
         data = data[data["ts_code"].isin(NOTCONTAIN['ts_code']) == False]
     return data
 
@@ -147,27 +155,53 @@ def adj_share():
 
 
 def new_list():
-    start='20200501'
+    start = '20200501'
     ll = read_data('stock_basic')
     # ll = ll.loc[ll['list_date'] >= '20200101']
     df = read_data('daily', start_date=start).merge(ll[['ts_code', 'list_date']],
-                                                         left_on=['ts_code', 'trade_date'],
-                                                         right_on=['ts_code', 'list_date'])
-    print(df.shape,df[df['high']==df['low']].shape,df[df['high']==df['close']].shape,df[(df['high']==df['close']) &( df['high']>df['low'])].shape)
+                                                    left_on=['ts_code', 'trade_date'],
+                                                    right_on=['ts_code', 'list_date'])
+    print(df.shape, df[df['high'] == df['low']].shape, df[df['high'] == df['close']].shape,
+          df[(df['high'] == df['close']) & (df['high'] > df['low'])].shape)
     print(df['trade_date'].min())
     df1 = read_data('limit_list', start_date=start).merge(ll[['ts_code', 'list_date']],
-                                                               on='ts_code')
+                                                          on='ts_code')
     df2 = read_data('stk_limit', start_date=start).merge(ll[['ts_code', 'list_date']],
-                                                              on='ts_code')
+                                                         on='ts_code')
     print()
 
 
-if __name__ == '__main__':
+def new_stock(data, list_days=100, new=False):
+    s_basic = pd.read_sql('stock_basic', con=engine)
+    data = data.merge(s_basic[['ts_code', 'list_date']], on=['ts_code'])
+    data['list_days'] = data.apply(lambda x: days(x['list_date'], x['trade_date']), axis=1)
+    data = data.loc[(data['list_days'] < list_days) == new]
+    return data
+
+
+def save_to_sql(data, tablename, fp=None, fp_date=False, mode='w', header=True):
+    if tablename not in (pd.read_sql_query("select * from pg_tables", con=engine))['tablename']:
+        # pd.read_sql_query("select * from pg_tables", con=engine)
+        # 创建表
+        print(111)
+        data.to_sql(tablename, con=engine, if_exists='append')
+
+    else:
+        data.to_sql(tablename, con=engine, if_exists='append')
+        # sql = 'select distinct trade_date from %s if %s is' % tablename
+    # saved_date = pd.read_sql_query(sql, con=engine)['trade_date']
+    #
+    # data.to_sql(tablename[tablename['trade_date'].isin(saved_date) == False], con=engine, if_exists='append',
+    #             index=False)
+    # print(tablename, ' download')
+
+    if __name__ == '__main__':
+        new_stock(read_data('daily'))
     # new_list()
 
     download_data()
-    # if datetime.datetime.today().weekday()%2==0:
-    #     stock_basic()
-    # # stock_basic()
+    if datetime.datetime.today().weekday() % 2 == 0:
+        stock_basic()
+        # stock_basic()
 
-    # # print(cal(end='20200301'),type(cal(end='20200301')))
+        # # print(cal(end='20200301'),type(cal(end='20200301')))
