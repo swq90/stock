@@ -180,14 +180,14 @@ def new_stock(data, list_days=100, new=False):
 
 
 def save_to_sql(data, tablename, fp=None, fp_date=False, mode='w', header=True):
-    if tablename not in (pd.read_sql_query("select * from pg_tables", con=engine))['tablename']:
-        # pd.read_sql_query("select * from pg_tables", con=engine)
-        # 创建表
-        print(111)
-        data.to_sql(tablename, con=engine, if_exists='append')
+    # if tablename not in (pd.read_sql_query("select * from pg_tables", con=engine))['tablename']:
+    #     # pd.read_sql_query("select * from pg_tables", con=engine)
+    #     # 创建表
+    #     print(111)
+    data.to_sql(tablename, con=engine, if_exists='replace')
 
-    else:
-        data.to_sql(tablename, con=engine, if_exists='append')
+    # else:
+    #     data.to_sql(tablename, con=engine, if_exists='append')
         # sql = 'select distinct trade_date from %s if %s is' % tablename
     # saved_date = pd.read_sql_query(sql, con=engine)['trade_date']
     #
@@ -195,8 +195,8 @@ def save_to_sql(data, tablename, fp=None, fp_date=False, mode='w', header=True):
     #             index=False)
     # print(tablename, ' download')
 
-    if __name__ == '__main__':
-        new_stock(read_data('daily'))
+if __name__ == '__main__':
+    new_stock(read_data('daily'))
     # new_list()
 
     download_data()
