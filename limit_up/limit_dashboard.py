@@ -17,7 +17,7 @@ def red_t_limit(x):
 def up_limit(x):
     return x[vars.CLOSE] == x[vars.UP_LIMIT]
 
-start='20200701'
+start='20200101'
 end='20210101'
 raw_data = read_data('daily', start_date=start, end_date=end).merge(
     read_data('stk_limit', start_date=start, end_date=end)[
@@ -46,6 +46,6 @@ def pin(data,conditons,classify=vars.TRADE_DATE):
 
 
 conditions=[red_line_limit,red_t_limit,up_limit,zhaban]
-# save_to_sql(pin(raw_data,conditions),'limit_count')
+save_to_sql(pin(raw_data,conditions),'limit_count')
 pin(raw_data,conditions)
 
