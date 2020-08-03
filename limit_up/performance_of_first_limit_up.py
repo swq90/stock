@@ -3,8 +3,9 @@ import pandas as pd
 from numpy import arange
 import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
-from stock.sql.data import save_data
+from stock.sql.data import save_data,save_to_sql
 from stock.util.basic import basic
+
 
 
 class idea1:
@@ -117,14 +118,14 @@ class idea1:
         if method=='all':
             return self.raw_data
 
-
+o=[-4,2]
 if __name__ == '__main__':
     # print(dir())
     # start, end = '20180101', '20200219'
     # start, end, days,sell_days = '20190220', '20200224', 2,1
     # start, end, days = '20200120', '20200224', 2
     # start, end, days = '20200210', '20200220', 3
-    start, end, days,sell_days = '20200501', '20201231', 3,0
+    start, end, days,sell_days = '20200101', '20201231', 3,0
     t = idea1(start_date=start, end_date=end, limit_type='up', days=days)
     print(t.raw_data.shape)
     t.raw_data=t.raw_data[(t.raw_data['pct_chg']>=-11)&(t.raw_data['pct_chg']<=11)]
@@ -176,16 +177,18 @@ if __name__ == '__main__':
     limit_count=pd.DataFrame(t.data.groupby('trade_date')['ts_code'].count()).reset_index()
     limit_count.columns=['trade_date','count']
 
-    t.data=t.data.loc[(t.data['open/pre_close']<=2)&(t.data['open/pre_close']>=-8)]
+    t.data=t.data.loc[(t.data['open/pre_close']<=o[1])&(t.data['open/pre_close']>=o[0])]
     # t['all_count']=limit_count
     print(t.data.shape)
     t.data.dropna(inplace=True)
     res=t.roi(days=sell_days)
     print(t.data.shape)
     res=res.merge(limit_count,on='trade_date')
-    res['占比']=res['n']/res['count']
-    save_data(res,'%s-%s回溯指标.csv'%(start,end))
+    res['proportion']=res['n']/res['count']
     print(res.iloc[-3:,:])
+    save_data(res,'%s-%s回溯指标.csv'%(start,end))
+    save_to_sql(res,'limit_performance')
+
     # mlist = [ 'open','close','ma'] + list(range(1, 5))
     # summary = pd.DataFrame()
     # for model in mlist:
@@ -205,5 +208,3 @@ if __name__ == '__main__':
     #     res[rate]=df['roi']
     # save_data(res,'rate回溯汇总%s%s2.csv' % (start, end))
     #
-
-    print()

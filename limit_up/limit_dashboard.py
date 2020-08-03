@@ -17,15 +17,15 @@ def red_t_limit(x):
 def up_limit(x):
     return x[vars.CLOSE] == x[vars.UP_LIMIT]
 
-start='20180101'
+start='20200701'
 end='20210101'
 raw_data = read_data('daily', start_date=start, end_date=end).merge(
     read_data('stk_limit', start_date=start, end_date=end)[
-        ['ts_code', 'trade_date', 'up_limit', 'down_limit']],
-    on=['ts_code', 'trade_date'])
+        [vars.TS_CODE, vars.TRADE_DATE, vars.UP_LIMIT, vars.DOWN_LIMIT]],
+    on=[vars.TS_CODE, vars.TRADE_DATE])
 print(raw_data.shape)
 list_days = basic().list_days(raw_data, list_days=30)
-raw_data = raw_data.merge(list_days, on=['ts_code', 'trade_date'])
+raw_data = raw_data.merge(list_days, on=[vars.TS_CODE, vars.TRADE_DATE])
 print(raw_data.shape)
 
 def statistic(data,condition):
@@ -45,5 +45,7 @@ def pin(data,conditons,classify=vars.TRADE_DATE):
 
 
 
-conditions=[red_line_limit,red_t_limit,up_limit,zhaban,process]
-save_to_sql(pin(raw_data,conditions),'limit_count')
+conditions=[red_line_limit,red_t_limit,up_limit,zhaban]
+# save_to_sql(pin(raw_data,conditions),'limit_count')
+pin(raw_data,conditions)
+
