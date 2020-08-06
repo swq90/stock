@@ -203,20 +203,22 @@ def wool(stock, data, days=1, PRICEB="close", PRICES="close", pct=11):
 
 def wool2(stock_list, data, days=1, PRICEB="close", PRICES="close"):
     limit_up = stock_list[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
+    data=data[data['ts_code'].isin(limit_up['ts_code'].unique())==True]
     df = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
         ['ts_code', 'trade_date', PRICEB]]
     df.dropna(inplace=True)
     df.rename(columns={PRICEB: 'buy_price'}, inplace=True)
     df = df.merge(
-        tool.pre_data(data[['ts_code', 'trade_date', PRICES]], label=[PRICES], pre_days=-1, new_label=['sell_price']))
+        tool.pre_data(data[['ts_code', 'trade_date', PRICES]], label=[PRICES], pre_days=-days, new_label=['sell_price']))
     # df.to_csv('s222.csv')
-    print('每日平均买入量', df.groupby(by='trade_date')['ts_code'].size().mean())
+    # print('每日平均买入量', df.groupby(by='trade_date')['ts_code'].size().mean())
     df['pct'] = (df['sell_price'] / df['buy_price'])
     sell_cut = pd.DataFrame()
     sell_cut['pct'] = df.groupby(by='trade_date')['pct'].mean()
     sell_cut['n'] = df.groupby(by='trade_date')['trade_date'].size()
     sell_cut['all_pct'] = sell_cut['pct'].cumprod()
-    sell_cut.dropna(inplace=True)
+
+    # sell_cut.dropna(inplace=True)
     return sell_cut
 # # score=pd.DataFrame()
 #
@@ -354,3 +356,21 @@ def wool2(stock_list, data, days=1, PRICEB="close", PRICES="close"):
 # stock_data=marks(stock_data,score)
 # stock=wool(stock_data,data)
 # print(stock)
+def avg_roi(stock_list, data, days=1, PRICEB="close", PRICES="close"):
+    #avg_roi
+    limit_up = stock_list[['ts_code', 'trade_date']].sort_values(by="trade_date").reset_index(drop=True)
+    data=data[data['ts_code'].isin(limit_up['ts_code'].unique())==True]
+    df = limit_up.merge(data[['ts_code', 'trade_date', PRICEB]], on=['ts_code', 'trade_date'])[
+        ['ts_code', 'trade_date', PRICEB]]
+    df.dropna(inplace=True)
+    df.rename(columns={PRICEB: 'buy_price'}, inplace=True)
+    df = df.merge(
+        tool.pre_data(data[['ts_code', 'trade_date', PRICES]], label=[PRICES], pre_days=-days, new_label=['sell_price']))
+
+    df['pct'] = (df['sell_price'] / df['buy_price'])
+    sell_cut = pd.DataFrame()
+    sell_cut['pct'] = df.groupby(by='trade_date')['pct'].mean()
+    sell_cut['n'] = df.groupby(by='trade_date')['trade_date'].size()
+
+    # sell_cut.dropna(inplace=True)
+    return sell_cut

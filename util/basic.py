@@ -234,9 +234,9 @@ class basic:
         for status in list('LDP'):
             df=pro.stock_basic(list_status=status,fields='ts_code,list_date,list_status')
             stock_basic = pd.concat([df,stock_basic],ignore_index=True)
-            print(stock_basic.shape)
+            # print(stock_basic.shape)
         # [['ts_code', 'list_date','list_status']]
-        print(stock_basic['list_status'].unique())
+        # print(stock_basic['list_status'].unique())
         data = data.merge(stock_basic, on="ts_code")
         # data["days"] = data.apply(lambda x: (datetime.date(int(x["trade_date"][:4]), int(x["trade_date"][4:6]),
         #                                                    int(x["trade_date"][6:])) - datetime.date(
@@ -337,6 +337,11 @@ class basic:
 
         if not new_label:
             new_label = ['pre_%s_%s' % (pre_days, x) for x in label]
+        if pre_days == 0:
+            # data.rename(columns=dict(map(lambda x,y:[x,y],label,new_label)),inplace=True)
+            for i in range(len(label)):
+                data[new_label[i]]=data[label[i]].copy()
+            return data
         if len(label) != len(new_label):
             print('列名输入有误')
         data = data[set(['ts_code', 'trade_date'] + label)]
@@ -510,21 +515,21 @@ class basic:
         if inplace:
             res.columns = ["ts_code", "trade_date", "pre_n_date", "pre_n_close"]
         return res
-
-    def to_save(self, data, filename, type=["csv"], path=PATH):
-        """
-
-        :param data: dataframe，需要保存的数据
-        :param filename: str，文件名
-        :param type: list，需要保存的文件类型
-        :param path: str，默认为当前路径下增加data文件夹
-        :return:
-        """
-        for t in type:
-            full_name = data.to_csv(str(path) + "\\data\\" + str(datetime.datetime.today())[:10] + filename + "." + t)
-
-            data.to_csv(full_name)
-            print("has saved file : ")
+    #
+    # def to_save(self, data, filename, type=["csv"], path=PATH):
+    #     """
+    #
+    #     :param data: dataframe，需要保存的数据
+    #     :param filename: str，文件名
+    #     :param type: list，需要保存的文件类型
+    #     :param path: str，默认为当前路径下增加data文件夹
+    #     :return:
+    #     """
+    #     for t in type:
+    #         full_name = data.to_csv(str(path) + "\\data\\" + str(datetime.datetime.today())[:10] + filename + "." + t)
+    #
+    #         data.to_csv(full_name)
+    #         print("has saved file : ")
 
     def history_name(self, keyword='ST|退', start_date='', end_date=''):
 
@@ -542,7 +547,7 @@ class basic:
         end_date = end_date if end_date else datetime.datetime.today().strftime('%Y%m%d')
         data['end_date'] = data['end_date'].fillna(end_date)
         data=data[data['end_date']>=start_date]
-        data.to_csv('data33.txt')
+        # data.to_csv('data33.txt')
         for i in range(data.shape[0]):
             df = pd.DataFrame()
             source = data.iloc[i]

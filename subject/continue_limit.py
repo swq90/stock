@@ -6,12 +6,17 @@ import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data, save_data
 from stock.util.basic import basic
-
+import stock.subject.continu_limit as cl
 # from
 # days = 2
+
+
+
+
 today = str(datetime.datetime.today().date())
 # selling = 'mid=(high+low)/2'
 selling = 'open'
+# selling = 'close'
 
 # 1:切分10类
 
@@ -29,12 +34,16 @@ selling = 'open'
 # pre_1 = ['CU']
 # con = ['NN']
 # open_res = ['ULL']  # 002187
-# open_res = ['NOU', 'OU', 'OR', 'OG', 'OD']
+open_res = ['','NOU', 'OU', 'OR', 'OG', 'OD']
 # pre_1 = ['CU','ULL','URL']
-# con = ['CU','NN']
-con = [ 'UL', 'UL','NN']
-open_res = ['open_pct']  # 002187
-pre_1 = ['ULL']
+# con = ['UL','NN']
+# con = [ 'UL', 'UL','UL','NN']
+con = ['UL','UL','UL','NN']
+
+# open_res = ['open_pct']  # 002187
+# open_res = ['OU']  # 002187
+
+pre_1 = []
 
 # 连续两天一字板，或一字板-一字板回封
 
@@ -117,7 +126,7 @@ def filter(data, conditions):
     return res
 
 
-def roi(red_line, raw_data, cut_left=-24, cut_right=24, step=2, selling_price='open'):
+def roi(red_line, raw_data, cut_left=-24, cut_right=24, step=2, selling_price=selling):
     res = []
     section = list(range(cut_left, cut_right, 2))
     # red_line['low_pct']=100*(red_line['low']/red_line['pre_close']-1)
@@ -161,42 +170,52 @@ def roi(red_line, raw_data, cut_left=-24, cut_right=24, step=2, selling_price='o
     return res
 
 
-def roi2(red_line, raw_data):
-    #
+def roi2(red_line, raw_data, cut_left=-24, cut_right=24, step=2, selling_price=selling
+         ):
     res = []
-    section = ['down_limit'] + list(range(-8, 10, 2)) + ['up_limit']
-    red_line['low_pct'] = 100 * (red_line['low'] / red_line['pre_close'] - 1)
-
+    section = list(range(cut_left, cut_right, 2))
+    # red_line['low_pct']=100*(red_line['low']/red_line['pre_close']-1)
+    raw_data = raw_data.loc[raw_data['ts_code'].isin(red_line['ts_code'])]
     for pb in section:
-        if pb not in raw_data.columns:
-            if isinstance(pb, int):
-                PB = 'PB'
-                red_line[PB] = red_line['pre_close'] * (1 + 0.01 * pb)
-                raw_data[PB] = raw_data['pre_close'] * (1 + 0.01 * pb)
-        else:
-            PB = pb
-        grass = red_line.loc[red_line[PB] >= red_line['low']]
+        if red_line.empty:
+            continue
+        PB = 'PB'
+        red_line.loc[:, PB] = red_line['open'] * (1 + 0.01 * pb)
+        raw_data.loc[:, PB] = raw_data['open'] * (1 + 0.01 * pb)
+        grass = red_line.loc[(red_line[PB] >= red_line['low'])].copy()
         if grass.empty:
             continue
-        for ps in section:
-            if ps not in raw_data.columns:
-                if isinstance(ps, int):
-                    PS = 'PS'
-                    raw_data[PS] = raw_data['pre_close'] * (1 + 0.01 * ps)
-            else:
-                PS = ps
+        raw_data.loc[:, PB] = raw_data.apply(lambda x: x['open'] if pb >= 0 else x[PB] if x[PB] >= x['low'] else None,
+                                             axis=1)
 
-            # raw_data[PS]=raw_data.apply(lambda x:x[PS] if x[PS]<=x['high'] else x['close'],axis=1)
-            # 集合竞价中，价格低于open，卖出，否则，价格小于当天最高价卖出，否则收盘价卖出
-            raw_data[PS] = raw_data.apply(
-                lambda x: x['open'] if x[PS] <= x['open'] else x[PS] if x[PS] <= x['high'] else x['close'], axis=1)
+        # for ps in section:
+        #     if ps not in raw_data.columns:
+        #         if isinstance(ps,int):
+        #             PS = 'PS'
+        #             raw_data[PS] = raw_data['pre_close'] * (1 + 0.01 * ps)
+        #     else:
+        #         PS=ps
+        #
+        #     # raw_data[PS]=raw_data.apply(lambda x:x[PS] if x[PS]<=x['high'] else x['close'],axis=1)
+        #     # raw_data[PS]=raw_data.apply(lambda x:x['open'] if x[PS]<=x['open'] else x['up_limit'] if x[PS]>=x['up_limit'] else x[PS] if x[PS]<=x['high'] else x['close'],axis=1)
+        #     # 集合竞价中，价格低于open，卖出，否则，价格小于当天最高价卖出，否则收盘价卖出
+        #
+        #
+        #     meat=sheep.wool2(grass,raw_data,PRICEB=PB,PRICES=PS).dropna()
+        #     if meat.empty:
+        #         continue
+        #     res.append([pb,ps,meat.shape[0],meat.iloc[-1,-1]])
+        meat = sheep.avg_roi(grass, raw_data, PRICEB=PB, PRICES=selling_price).dropna()
+        if meat.empty:
+            continue
+        # grass_count=grass.groupby('trade_date')['trade_date'].count().reset_index()
+        print([pb, meat['pct'].mean(), meat['n'].sum()])
+        res.append([pb, meat['pct'].mean(), meat['n'].sum()])
 
-            meat = sheep.wool2(grass, raw_data, PRICEB=PB, PRICES=PS).dropna()
-            if meat.empty:
-                continue
-            res.append([pb, ps, meat.shape[0], meat.iloc[-1, -1]])
-    res = pd.DataFrame(res, columns=['pb', 'ps', 'n_days', 'pct'])
+    res = pd.DataFrame(res, columns=['pb', 'pct', 'nums',])
     return res
+
+
 
 
 # o,ulrl,ull,nn
@@ -208,7 +227,7 @@ if __name__ == '__main__':
     end_date = '20%s1231'
 
 
-    for year in range(19, 20):
+    for year in range(18, 20):
         trace=pd.DataFrame()
         raw_data = read_data('daily', start_date=start_date % year, end_date=end_date %( year)).iloc[:, :-2]
         limit = read_data('stk_limit', start_date=start_date % year, end_date=end_date % year)
@@ -226,6 +245,7 @@ if __name__ == '__main__':
         if 'open_pct' in open_res:
             open_res=['open_pct'+'%s'%x for x in range(-8,11,2)]
         print(open_res)
+
         for open in open_res:
             if not pre_1:
                 pre_1.append(con.pop(0))
@@ -239,7 +259,7 @@ if __name__ == '__main__':
                     continue
 
                 save_data(red_line, '%s%sraw_data.csv' % (year, ','.join(conditions)),fp_date=True)
-                res = roi(red_line, raw_data, selling_price=selling.split('=')[0], cut_left=-24, cut_right=4, step=2)
+                res = roi2(red_line, raw_data, selling_price=selling.split('=')[0], cut_left=-24, cut_right=4, step=2)
                 if res.empty:
                     print('当前条件下无数据')
                     continue

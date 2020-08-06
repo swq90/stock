@@ -17,7 +17,7 @@ pro = ts.pro_api()
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
-up_cal = 20
+up_cal = 11
 temp = 10
 pre = 5
 days=1
@@ -34,6 +34,7 @@ new_dir='\\stockdata\\'+today+'\\'
 # new_dir='\\stockdata\\'+str(datetime.datetime.today().date()-datetime.timedelta(365))+'\\'
 
 path = os.getcwd() + new_dir
+
 datelist=tool.tradeCal(cal=up_cal)
 
 if not os.path.isdir(path):
@@ -54,8 +55,8 @@ else:
     data = tool.trade_daily(cal=up_cal + temp).reset_index(drop=True)
     # data = tool.trade_daily(start_date = '20180103', end_date = "20181231").reset_index(drop=True)
     print('daily',data.shape)
-    data=fuquan.fuqan(data)
-    print('fuquan',data.shape)
+    # data=fuquan.fuqan(data)
+    # print('fuquan',data.shape)
     data = data.merge(tool.get_all_ma(data, ma=ma, dis_pct=False), on=['ts_code', 'trade_date'])
     print('ma',data.shape)
     # 要修改Lget_all_ma 返回只保留ma，code，date，其他删除

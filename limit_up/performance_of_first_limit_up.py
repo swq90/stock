@@ -54,6 +54,7 @@ class idea1:
         获取基础价，涨停价，
         计算当日开盘/昨日收盘比，
         """
+
         if bins is None:
             bins = [-100] + list(range(-10, 11, cuts)) + [100]
 

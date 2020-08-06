@@ -8,8 +8,9 @@ from stock.sql.data import save_data
 from stock.util.basic import basic
 import stock.limit_up.get_limit_stock as gls
 import tushare as ts
-
+from stock.subject.ml_find_similiar import cos_sim
 from stock.sql.data import save_data, read_data
+from stock import vars
 
 pro = ts.pro_api()
 # START, END = '20170101', '20200401'
@@ -20,11 +21,14 @@ pro = ts.pro_api()
 # 股票基本信息
 # basic=read_data('stock_basic')
 # 纳斯达克指数
+def get_index(ts_code,start_date,end_date):
+    data = pro.query('index_daily',ts_code=ts_code, start_date=start_date,end_date=end_date)
+    return data
 def index_cycle(ts_code='000001.SH',start_date=None,end_date=None):
     # IXIC = pro.query('index_global', ts_code=ts_code, start_date=START)
     # # index_basic=pro.query('index_basic',market='data')
     # # 上证指数
-    data = pro.query('index_daily',ts_code=ts_code, start_date=start_date,end_date=end_date)
+    data = get_index(ts_code, start_date,end_date)
     data['today'] = pd.to_datetime(data['trade_date']).dt.dayofweek
     df=data[['trade_date','pct_chg','today','close','pre_close']].copy()
     df['today']=df['today']+1
@@ -101,14 +105,22 @@ def index_jump(ts_code='000001.SH',start_date=None,end_date=None):
     #     df.iloc[-i]=df.iloc[-i].cumprod()
     print()
 
+def index_slope(data,N,K):
+    """
 
-
-START, END = '20180101', '20201231'
-#
+    @param data: datafarme,指数数据
+    @param N: int，几天内
+    @param K: float，斜率
+    @return: dataframe,符合斜率条件的股票
+    """
+    data.sort_values('trade_date',inplace=True)
+    data['%s_pct'%N]=data['close'].rolling(N).apply(lambda x:100*(x[N-1]/x[0]-1))
+    data['%s_amount'%(N-1)]=data['amount'].rolling(N-1).sum()
+    return data
 # # data['lastday_week']=pd.to_datetime(data['trade_date']).dt.dayofweek
 # # data['monday/friday']=data['close']/data['5_close']
 #
-# # index_cycle('IXIC',start_date=START,end_date=END)
+# index_cycle(start_date=START,end_date=END)
 # res=pd.DataFrame()
 # for year in range(7,10):
 #     START, END = '201%s0101'%year, '201%s1231'%year
@@ -116,5 +128,30 @@ START, END = '20180101', '20201231'
 #     res=pd.concat([res,index_cycle( start_date=START, end_date=END)],axis=1)
 # save_data(res,'sh周期日回溯.csv')
 # print()
-res=index_jump( start_date=START, end_date=END)
+# res=index_jump( start_date=START, end_date=END)
+# def cos_aux(df):
+#     print(df)
+#     return [[df.iloc[0,vars.TRADE_DATE],df.iloc[-1,vars.TRADE_DATE]],cos_sim(df[vector],sample[vector])]
+def cos_cycel(data,N):
+    res=[]
+    data.sort_values(vars.TRADE_DATE,inplace=True)
+    for l in range(data.shape[0]-N):
+        vector2=data.iloc[l:l+N,:]
+
+        res.append([vector2.iloc[0][vars.TRADE_DATE],vector2.iloc[-1][vars.TRADE_DATE],cos_sim(vector1[cols].values.reshape(1,-1),vector2[cols].values.reshape(1,-1))])
+    return pd.DataFrame(res,columns=['start','end','sim'])
+START, END = '20150101', '20201231'
+ts_code='000001.SH'
+# cols=[vars.OPEN,vars.CLOSE,vars.AMOUNT,vars.VOL]
+cols=[vars.AMOUNT,vars.VOL]
+#
+file_name='%s_%s.csv'
+N=10
+data = get_index(ts_code, START, END)
+
+# data = index_slope(data, 4, 1)
+vector1 = data.iloc[-N-1:-1, :]
+if __name__=='__main__':
+
+    save_data(cos_cycel(data,N),file_name%(N,'-'.join(cols)),fp_date=True)
 print()

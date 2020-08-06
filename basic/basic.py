@@ -4,12 +4,12 @@ import pandas as pd
 import datetime
 import tushare as ts
 import matplotlib.pyplot as plt
-import stockfilter
+import stock.util.stockfilter
 
 # ts.set_token('73bebe31744e1d24de4e95aa59828b2cf9d5e07a40adbbc77a02a53e')
 pro = ts.pro_api()
 TODAY = str(datetime.datetime.today().date())[:10].replace("-", "")
-NOTCONTAIN = stockfilter.StockFilter().stock_basic(TODAY, name="st|ST", market="科创板")
+NOTCONTAIN = stock.util.stockfilter.StockFilter().stock_basic(TODAY, name="st|ST", market="科创板")
 
 PATH = os.getcwd()
 

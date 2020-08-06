@@ -25,8 +25,7 @@ def idea7(XISHU=0.998, UPPER=False, PERIOD=5, TIMES=5, CHGPCT=[1, 2]):
     tool = basic.basic()
     pro = ts.pro_api()
     while (not os.path.isfile(path + str(today) + '\data.csv')) or (
-            not os.path.isfile(path + str(today) + '\daily-basic.csv')) or (
-            not os.path.isfile(path + str(today) + '\stock-label.csv')):
+            not os.path.isfile(path + str(today) + '\daily-basic.csv')) :
         today = today - datetime.timedelta(1)
     # 基础数据，市值信息，
 
@@ -78,10 +77,17 @@ def idea7(XISHU=0.998, UPPER=False, PERIOD=5, TIMES=5, CHGPCT=[1, 2]):
     wool = sheep.wool(df, data)
     if not wool.empty:
         wool.to_csv(
-            path + 'low%s-%sma%stimes%s(%s-%s)huisuxiaoguo.csv' % (XISHU, XISHU+UPPER, PERIOD, TIMES, CHGPCT[0], CHGPCT[1]))
-    df[df['trade_date'] == today][['ts_code']].to_csv(
-        path + 'low%sma%stimes%s(%s-%s)%s.txt' % (XISHU, PERIOD, TIMES, CHGPCT[0], CHGPCT[1], today),index=False)
+            path + 'low%s-%sma%stimes%s(%s-%s)huisuxiaoguo.csv' % (
+            XISHU, XISHU + UPPER, PERIOD, TIMES, CHGPCT[0], CHGPCT[1]))
+    res = df[df['trade_date'] == today][['ts_code']]
+    if  res.empty:
+        print('%s无数据'%today)
+    else:
+
+        res.to_csv(
+            path + 'low%sma%stimes%s(%s-%s)%s.txt' % (XISHU, PERIOD, TIMES, CHGPCT[0], CHGPCT[1], today), index=False)
     return wool
+
 
 idea7()
 # 对比详情

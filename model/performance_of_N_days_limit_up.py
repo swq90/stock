@@ -26,13 +26,12 @@ def first_up(start_date='20200201', end_date='20200215', PRICEB='open', PRICES='
     print('科创,st,out', raw_data.shape)
     raw_data = raw_data.merge(stk_limit.loc[:, ['ts_code', 'trade_date', 'up_limit', 'down_limit']],
                               on=['ts_code', 'trade_date'])
-    raw_data['open/pre_close'] = raw_data.apply(
-        lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else x['open'] / x[
-            'pre_close'],
+    raw_data['%s/%s'%(CHANGE[0],CHANGE[1])] = raw_data.apply(
+        lambda x: 99 if x[CHANGE[0]] == x['up_limit'] else -99 if x[CHANGE[0]] == x['down_limit'] else x[CHANGE[0]] / x[CHANGE[1]],
         axis=1)
     if buy_date != 1:
-        price_buy = basic.basic().pre_data(raw_data[['ts_code', 'trade_date', PRICEB, 'open/pre_close']],
-                                           label=[PRICEB, 'open/pre_close'], new_label=['price_buy', 'xishu_pct', ],
+        price_buy = basic.basic().pre_data(raw_data[['ts_code', 'trade_date', PRICEB, '%s/%s'%(CHANGE[0],CHANGE[1])]],
+                                           label=[PRICEB, '%s/%s'%(CHANGE[0],CHANGE[1])], new_label=['price_buy', 'xishu_pct', ],
                                            pre_days=-buy_date + 1)
         raw_data = raw_data.merge(price_buy[['ts_code', 'trade_date', 'price_buy', 'xishu_pct']],
                                   on=['ts_code', 'trade_date'])
@@ -108,7 +107,7 @@ def first_up(start_date='20200201', end_date='20200215', PRICEB='open', PRICES='
     # res_all.to_csv('%s%scutofall.csv' % (start_date, end_date))
     # res_some.to_csv('%s%scutoffirst.csv' % (start_date, end_date))
 
-
-first_up(start_date='20190101', end_date='20200215', PRICEB='open', PRICES='close', sell_date=1, buy_date=2,
-         CUTS=20, CHANGE=['open', 'close'])
-print()
+if __name__=='__main__':
+    first_up(start_date='20190101', end_date='20200215', PRICEB='open', PRICES='close', sell_date=1, buy_date=2,
+             CUTS=20, CHANGE=['open', 'close'])
+    print()

@@ -9,12 +9,16 @@ from stock.util.basic import basic
 
 from stock.sql.data import save_data,read_data
 import stock.util.sheep as sheep
-
+from stock import vars
 START='20200201'
 END='20201231'
-UP_PCT=0.5
-UP_DAYS=5
 
+sample_code='002614.SZ'
+sample_start='20200619'
+sample_end='20200806'
+# UP_PCT=0.5
+# UP_DAYS=5
+cols=[vars.PCT_CHG]#特征
 def cos_sim(vector_a, vector_b):
     """
     计算两个向量之间的余弦相似度
@@ -29,6 +33,13 @@ def cos_sim(vector_a, vector_b):
     cos = num / denom
     sim = 0.5 + 0.5 * cos
     return sim
+def cos_cycel(data,N,vector1):
+    res=[]
+    data.sort_values(vars.TRADE_DATE,inplace=True)
+    for l in range(data.shape[0]-N):
+        vector2=data.iloc[l:l+N,:]
+        res.append([vector2.iloc[0][vars.TS_CODE],vector2.iloc[0][vars.TRADE_DATE],vector2.iloc[-1][vars.TRADE_DATE],cos_sim(vector1[cols].values.reshape(1,-1),vector2[cols].values.reshape(1,-1))])
+    return pd.DataFrame(res,columns=['ts_code','start','end','sim'])
 def process_data():
     raw_dataset =read_data('daily',start_date=START,end_date=END)
     # 上市日期条件，测试时先不加
@@ -58,13 +69,13 @@ def process_data():
 
 def sample(ts_code,start=START,end=END):
     #找到有友食品前几日涨停板数据相似的数据
-    vector_a=read_data('daily',start_date=start,end_date=end)
-    vector_a=vector_a.loc[vector_a['ts_code']==ts_code].copy()
+    vector=read_data('daily',start_date=start,end_date=end)
+    vector=vector.loc[vector['ts_code']==ts_code].copy()
     # if vector_a.shape[0]<5:
     #     return
     # pre_data=basic().pre_data(vector_a,label=['close'],pre_days=UP_DAYS)
     # vector_a=vector_a.merge(pre_data[['ts_code','trade_date','pre_%s_close'%UP_DAYS]],on=['ts_code','trade_date']).sort_values('trade_date').reset_index(drop=True)
-    return vector_a
+    return vector
 
 def sim_sample(start=START,end=END):
     df=read_data('daily',start_date=start,end_date=end)
@@ -89,34 +100,24 @@ def process(df,days):
     return df
 
 if __name__=='__main__':
+    res=pd.DataFrame()
     # a=cos_sim([100,100,200],[100,100,100])
     # b=cos_sim([100,2],[100,1])
     #
-    sim_data=[]
+
     # s1=sample('603697.SH',start='20200506',end='20200512')
     # s2=sim_sample(start='20200513',end='20200519')
-    sample_code='002187.SZ'
-    days=6
-    s1=sample(sample_code,start='20200521',end='20200528')
-    s2=sim_sample(start='20200527',end='20200603')
-    #上涨前n日区间
-    vector1=process(s1,days=days)
+    # sample_code='002187.SZ'
+    s1=sample(sample_code,start=sample_start,end=sample_end)
+    data=sim_sample(start=START,end=END)
+    N_days=s1.shape[0]
+    for ts_code in data['ts_code'].unique():
+        df=data.loc[data['ts_code'] == ts_code].copy()
+        res=pd.concat([res,cos_cycel(df,N_days,s1)],ignore_index=True)
 
-    print(vector1.shape)
-    for ts_code in s2['ts_code'].unique():
-        vector2=s2.loc[s2['ts_code'] == ts_code].copy()
-        if vector2.shape[0]==days:
-            sim_data.append([ts_code,cos_sim(vector1,process(vector2))])
 
-    sim_data=pd.DataFrame(sim_data,columns=['ts_code','sim'])
+    res.sort_values('sim',inplace=True,ascending=False)
+    save_data(res,'%s%s特征.csv'%(sample_code,'-'.join(cols)))
 
-    sim_data.sort_values('sim',inplace=True,ascending=False)
-    save_data(sim_data,'%s6原始特征.csv'%sample_code)
-    print(sim_data.head(10))
-    # 回测
-    print(sim_data.describe())
-
-    # sim_data['trade_date']='20200519'
-    # sim_data['trade_date']='20200519'
     # roi=sheep.wool2(sim_data.head(10),read_data('daily',start_date='20200515'))
     print()

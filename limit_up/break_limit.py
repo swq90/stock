@@ -555,19 +555,19 @@ def lianban(start_date, end_date):
     print(data.shape)
     # data['cd'] = data.apply(lambda x: 1 if (x['close'] == x['down_limit'])&(x['open']<0.95*x['pre_close']) else 0, axis=1)
     # data['open_less_limit']= data.apply(lambda x: 1 if (x['open']!=x['up_limit'])&(x['close']==x['up_limit'])&(x['open'] >= (x['pre_close']*1.05)) else 0, axis=1)
-    data['line_limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
-    # # data['re_limit']=data.apply(lambda x: 1 if (x['close'] == x['up_limit']) & (x['close'] == x['open'])&(x['low'] < x['up_limit']) else 0, axis=1)
+    # data['line_limit'] = data.apply(lambda x: 1 if x['low'] == x['up_limit'] else 0, axis=1)
+    data['re_limit']=data.apply(lambda x: 1 if (x['close'] == x['up_limit']) & (x['close'] == x['open'])&(x['low'] < x['up_limit']) else 0, axis=1)
     # data['or_limit'] = data.apply(
     #     lambda x: 1 if (x['open'] != x['up_limit']) & (x['close'] == x['up_limit']) else 0, axis=1)
     data['c_limit']=data.apply(
         lambda x: 1 if (x['close'] == x['up_limit']) else 0, axis=1)
-    data['nn'] = data.apply(lambda x: 1 if (x['close'] < x['up_limit']) & (x['close'] > x['down_limit']) else 0,
+    data['nn'] = data.apply(lambda x: 1 if  (x['close'] != x['up_limit']) & (x['close'] != x['down_limit']) else 0,
                             axis=1)
     # data['c_c'] = data.apply(lambda x: 1 if (x['open']== x['up_limit']) & (x['low'] == x['down_limit'])&(x['pct_chg']<0) else 0, axis=1)
     # data['c_c'] = data.apply(lambda x: 1 if (x['up_limit']==x['open']) &(0<=x['pct_chg']) &(x['pct_chg']<=5)else 0, axis=1)
-    data['c_c3'] = data.apply(lambda x: 1 if (x['down_limit']==x['close']) &(x['open']<x['pre_close']) else 0, axis=1)
-
-    # data['c_c'] = data.apply(lambda x: 1 if (0>(x['open']/ x['pre_close']-1)>-0.05) &(-4>(x['pct_chg']-1)>-8)  else 0, axis=1)
+    # data['c_c3'] = data.apply(lambda x: 1 if (x['down_limit']==x['close']) &(x['open']<x['pre_close']) else 0, axis=1)
+    # data['c_c4'] = data.apply(lambda x: 1 if (x['up_limit']!=x['close']) & (x['up_limit']==x['open']) &(x['pct_chg']>5) else 0, axis=1)
+    # data['c_c5'] = data.apply(lambda x: 1 if (1.02<x['open'] / x['pre_close'] <= 1.06) & (-2>x['pct_chg'] >= -6)  else 0, axis=1)
     # data['c_c1'] = data.apply(lambda x: 1 if (-4<(x['open']/ x['pre_close']-1)<-0.02) &((-2>x['pct_chg']>-5) ) else 0, axis=1)
     # data['all']=1
     # data['m_ma5'] = data.apply(
@@ -592,19 +592,20 @@ def lianban(start_date, end_date):
     print(guoli.shape[0])
     guoli['ma'] = guoli['amount'] / guoli['vol'] * 10
     guoli=guoli.loc[guoli['up_limit']/guoli['pre_close']>=1.08]
-    save_data(guoli, 'lianban%s%s.csv' % (','.join(days), end_date),fp_date=True)
+    save_data(guoli, 'lianban1%s%s.csv' % (','.join(days), end_date),fp_date=True)
     for ps in ['high', 'low', 'ma', 'open', 'close']:
         guoli['%s/pre_close' % ps] = 100 * (guoli[ps] / guoli['pre_close'] - 1)
         print(ps, guoli['%s/pre_close' % ps].mean())
         # print(ps, guoli['%s/pre_close' % ps].describe())
 
     print('close_limit_up:', guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.shape[0])
+    print('close_down_up:', guoli.loc[guoli['close'] == guoli['down_limit']].shape[0] / guoli.shape[0])
     print('open_limitup:', guoli.loc[guoli['open'] == guoli['up_limit']].shape[0] / guoli.shape[0])
 
     print('line_red:', guoli.loc[(guoli['open'] == guoli['up_limit']) & (guoli['close'] == guoli['up_limit']) & (
                 guoli['low'] == guoli['up_limit'])].shape[0] / guoli.shape[0])
     print('high_limitup:', guoli.loc[guoli['high'] == guoli['up_limit']].shape[0] / guoli.shape[0])
-    print('dont keep up limit ',guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.loc[guoli['high'] == guoli['up_limit']].shape[0] )
+    # print('dont keep up limit ',guoli.loc[guoli['close'] == guoli['up_limit']].shape[0] / guoli.loc[guoli['high'] == guoli['up_limit']].shape[0] )
     print('pobanhoupct',guoli.loc[guoli['open'] == guoli['up_limit']]['pct_chg'].mean())
     # print(guoli.shape)
     # guoli=guoli.loc[(guoli['open']==guoli['up_limit'])&(guoli['low']<guoli['up_limit'])]
@@ -652,10 +653,12 @@ print()
 # days=['line_limit','line_limit','nn']
 # days=['c_c','line_limit','line_limit','nn']
 # days=['c_c','re_limit','line_limit','or_limit','nn']
-# days=['c_c','line_limit','line_limit']#603608
-days=['c_c3','line_limit','c_limit','c_limit','c_limit']#603608
+days=['line_limit','line_limit','nn']#603608
+# days=['c_c3','line_limit','c_limit','c_limit','c_limit']#603608
+# days=['c_c4','c_limit','c_limit','nn']#300374
+days=('c_limit', 're_limit', 'c_limit','nn')
 # days=['c_c','or_limit','or_limit','or_limit','nn']
 # days=['c_c1','or_limit','nn']
-save_data(lianban(start_date,end_date), '600824%s%s.csv' % (','.join(days), end_date), fp_date=True)
+save_data(lianban(start_date,end_date), '603101%s%s.csv' % (','.join(days), end_date), fp_date=True)
 
 print()

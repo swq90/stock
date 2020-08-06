@@ -11,8 +11,9 @@ pro = ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
 t = 1
 
-NDAY = 4
-slected_date = '20200228'
+NDAY = 3
+
+slected_date = '20200706'
 # label = ['low_ma5']
 path = 'D:\\workgit\\stock\\util\\stockdata\\'
 # pct=list(range(-11,11))
@@ -20,7 +21,7 @@ path = 'D:\\workgit\\stock\\util\\stockdata\\'
 today = datetime.datetime.today().date()
 tool = basic.basic()
 while (not os.path.isfile(path + str(today) + '\data.csv')):
-    # or (
+    # or (`
     #         not os.path.isfile(path + str(today) + '\daily-basic.csv')) or (
     #         not os.path.isfile(path + str(today) + '\stock-label.csv')):
     today = today - datetime.timedelta(1)

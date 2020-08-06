@@ -3,11 +3,11 @@ import datetime
 import numpy as np
 import math
 import pandas as pd
-import stockfilter
+import stock.basic.stockfilter
 import matplotlib.pyplot as plt
 import tushare as ts
-import util.basic as basic
-import util.sheep as sheep
+import stock.util.basic as basic
+import stock.util.sheep as sheep
 
 #
 # pd.set_option('display.max_columns', None)

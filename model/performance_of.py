@@ -28,7 +28,7 @@ def get_data(start_date='20200201', end_date='20200215',CHANGE=['open', 'pre_clo
     raw_data = raw_data.merge(stk_limit.loc[:, ['ts_code', 'trade_date', 'up_limit', 'down_limit']],
                               on=['ts_code', 'trade_date'])
     raw_data['%s/%s' % (CHANGE[0], CHANGE[1])] = raw_data.apply(
-        lambda x: 9999 if x['open'] == x['up_limit'] else -9999 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
+        lambda x: 99 if x['open'] == x['up_limit'] else -99 if x['open'] == x['down_limit'] else (x[CHANGE[0]] / x[
             CHANGE[1]] - 1) * 100,
         axis=1)
     return raw_data
@@ -36,8 +36,6 @@ def first_up(raw_data,start_date='20200201', end_date='20200215', PRICEB='open',
              sell_date=1,
              buy_date=2, CUTS=2,CHANGE=['open', 'pre_close'],
               model=None, model3_pct=1.01):
-
-
     if buy_date != 1:
         price_buy = basic.basic().pre_data(
             raw_data[['ts_code', 'trade_date', PRICEB, '%s/%s' % (CHANGE[0], CHANGE[1])]],
@@ -125,7 +123,7 @@ def first_up(raw_data,start_date='20200201', end_date='20200215', PRICEB='open',
         if wool_some.empty:
             continue
         if wool_some.iloc[-1, -1]:
-            # wool_some.to_csv('pct%swool_some%s~%s.csv' % (cut, start_date, end_date))
+            wool_some.to_csv('pct%swool_some%s~%s-%s.csv' % (cut, start_date, end_date,sell_date))
             print('some', wool_some.iloc[-1, -1])
             res_some.loc['%s~%s' % (cut, cut + CUTS), 'res'] = wool_some.iloc[-1, -1]
             res_some.loc['%s~%s' % (cut, cut + CUTS), 'n_mean'] = wool_some['n'].mean()
@@ -138,10 +136,18 @@ def first_up(raw_data,start_date='20200201', end_date='20200215', PRICEB='open',
 
 
 if __name__ == '__main__':
-    start,end='20191101','20200218'
-    BUY_DATE=2
+    print(dir())
+    start,end='20190201','20200220'
+
+    BUY_DATE=0
     raw_data=get_data(start_date=start, end_date=end, CHANGE=['open', 'pre_close'])
+    # 首板次日open买，close卖
+    first_up(raw_data,start_date=start, end_date=end,PRICEB='open', PRICES='high', sell_date=2, buy_date=2,
+             CUTS=2, CHANGE=['open', 'pre_close'])
+    # first_up(raw_data,start_date=start, end_date=end,PRICEB='open', PRICES='close', sell_date=2, buy_date=2,
+    #          CUTS=2, CHANGE=['open', 'pre_close'])
     ##分月回测
+
     res=pd.DataFrame()
     # years = [ 2019, 2020]
     #     for month in range(1, 13):
@@ -174,8 +180,8 @@ if __name__ == '__main__':
         res['n_mean%s'%model]=t['n_mean']
         res['days%s'%model]=	t['days']
     res.to_csv('model-n-%s~%s.csv' % (start, end))
-    # first_up(start_date='20190101', end_date=end, PRICEB='open', PRICES='open', sell_date=2, buy_date=2,
-    #          CUTS=2, CHANGE=['open', 'pre_close'])
+    first_up(start_date='20190219', end_date=end, PRICEB='open', model=2, sell_date=2, buy_date=2,
+             CUTS=2, CHANGE=['open', 'pre_close'])
     # first_up(start_date='20180101', end_date='20181231', PRICEB='open', PRICES='close', sell_date=2,  buy_date=2,
     #          CUTS=2, CHANGE=['open', 'pre_close'])
     # first_up(start_date='20180101', end_date='20181231', PRICEB='open', PRICES='open', sell_date=2, buy_date=2,
