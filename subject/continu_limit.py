@@ -6,6 +6,7 @@ import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data, save_data
 from stock.util.basic import basic
 from stock import vars
+
 # from stock.subject import continu_list
 
 # 所有条件以list[lambda1,lambda2,……，func1)
@@ -81,9 +82,9 @@ def open_not_limit(x):
     return (x[OPEN] != x[UP_LIMIT]) & (x[OPEN] != x[DOWN_LIMIT])
 
 
-def performance(df, data,LIMIT=False):
+def performance(df, data, LIMIT=False):
     if LIMIT:
-        df=df.loc[(df[vars.HIGH]!=df[UP_LIMIT])&(df[vars.LOW]!=df[DOWN_LIMIT])]
+        df = df.loc[(df[vars.HIGH] != df[UP_LIMIT]) & (df[vars.LOW] != df[DOWN_LIMIT])]
     if MA not in df.columns:
         df[MA] = df['amount'] / df['vol'] * 10
     res = {}
@@ -184,7 +185,7 @@ def reform_performance(res, label_name):
     performance_table[label_name] = pd.Series(res).map(FORMAT)
 
 
-def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[ HIGH,CLOSE, LOW],
+def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HIGH, CLOSE, LOW],
              limit_r=[UP_LIMIT, DOWN_LIMIT]):
     res = pd.DataFrame()
     if cuts_label not in df.columns:
@@ -200,7 +201,7 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[ H
 
     for con in limit_l:
         for con_r in limit_r:
-            if ((con==vars.LOW) & (con_r==vars.UP_LIMIT)) or ((con==vars.HIGH )& (con_r==vars.DOWN_LIMIT)):
+            if ((con == vars.LOW) & (con_r == vars.UP_LIMIT)) or ((con == vars.HIGH) & (con_r == vars.DOWN_LIMIT)):
                 continue
             df['%s=%s' % (con, con_r)] = df.apply(lambda x: 1 if x[con] == x[con_r] else 0, axis=1)
             res = pd.concat([res, df.groupby('cate')['%s=%s' % (con, con_r)].sum()], axis=1)
@@ -209,7 +210,7 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[ H
         res.loc['total', col] = res[col].sum()
     for con in limit_l:
         for con_r in limit_r:
-            if ((con==vars.LOW) & (con_r==vars.UP_LIMIT)) or ((con==vars.HIGH )& (con_r==vars.DOWN_LIMIT)):
+            if ((con == vars.LOW) & (con_r == vars.UP_LIMIT)) or ((con == vars.HIGH) & (con_r == vars.DOWN_LIMIT)):
                 continue
             res['%s=%s:total' % (con, con_r)] = (res['%s=%s' % (con, con_r)] / res['total']).map(FORMAT)
     # if not new_label:
@@ -227,13 +228,9 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[ H
 def detection(ts_code, start, end):
     vector = read_data('daily', start_date=start, end_date=end)
     vector = vector.loc[vector['ts_code'] == ts_code].copy().sort_values(vars.TRADE_DATE)
-    test = [red_line_limit()]
+    check_list = {1: [red_line_limit, green_line_limit], 2: [red_t_limit, green_t_limit], 3: [ord_limit],
+                  4: [red_block, green_block]}
 
-
-check_list = {1: [red_line_limit, green_line_limit], 2: [red_t_limit, green_t_limit], 3: [ord_limit],
-              4: [red_block, green_block
-
-                  ]}
 
 start_date = '20150101'
 end_date = '20211201'
@@ -400,19 +397,23 @@ FORMAT = lambda x: '%.4f' % x
 #              lambda x: (x[OPEN] < x[CLOSE])  & (x[PCT_CHG] >= 1) & (
 #                      x[PCT_CHG] < 6)&(x[HIGH]!=x[UP_LIMIT])&(x[LOW]!=x[DOWN_LIMIT])]
 
-ts_code = '002614C-O'
-condition = [n_n,
-             lambda x: (x[OPEN] / x[PRE_CLOSE] >= 1.01)  & (x[OPEN] / x[PRE_CLOSE] <= 1.02)  &(x[PCT_CHG] >= 5) & (
-                     x[PCT_CHG] < 6)&(x[HIGH]/x[PRE_CLOSE]<1.07),
-             lambda x:(x[OPEN] / x[PRE_CLOSE] >= 1.03)  & (x[OPEN] / x[PRE_CLOSE] <= 1.04) & (x[PCT_CHG] >= 4) & (
-                     x[PCT_CHG] < 5)&(x[LOW]/x[PRE_CLOSE]>1.02)]
+# ts_code = '002614C-O'
+# condition = [n_n,
+#              lambda x: (x[OPEN] / x[PRE_CLOSE] >= 1.01)  & (x[OPEN] / x[PRE_CLOSE] <= 1.02)  &(x[PCT_CHG] >= 5) & (
+#                      x[PCT_CHG] < 6)&(x[HIGH]/x[PRE_CLOSE]<1.07),
+#              lambda x:(x[OPEN] / x[PRE_CLOSE] >= 1.03)  & (x[OPEN] / x[PRE_CLOSE] <= 1.04) & (x[PCT_CHG] >= 4) & (
+#                      x[PCT_CHG] < 5)&(x[LOW]/x[PRE_CLOSE]>1.02)]
 
-
+# ts_code = '002151'
+# condition = [up_limit,red_line_limit, red_line_limit, red_line_limit, ord_limit]
+ts_code = '600351'
+condition = [red_line_limit,lambda x: (x[OPEN]<x[CLOSE])& (x[PCT_CHG] >= 0) & (
+                     x[PCT_CHG] < 5)
+             ]
 
 performance_table = pd.DataFrame()
 
 if __name__ == '__main__':
-
     print(ts_code)
     raw_data = read_data('daily', start_date=start_date, end_date=end_date).merge(
         read_data('stk_limit', start_date=start_date, end_date=end_date)[
@@ -426,8 +427,8 @@ if __name__ == '__main__':
 
     res = performance(data, raw_data)
     reform_performance(res, '-'.join([x.__name__ if x != None else '' for x in condition]))
-    res = performance(data, raw_data,LIMIT=True)
-    reform_performance(res, 'limit'+'-'.join([x.__name__ if x != None else '' for x in condition]))
+    res = performance(data, raw_data, LIMIT=True)
+    reform_performance(res, 'limit' + '-'.join([x.__name__ if x != None else '' for x in condition]))
     save_data(data, '%s%s%sdata.csv' % (
         ts_code,
         '~'.join(['_' if x == None else x.__name__ if 'lambda' not in x.__name__ else 'special' for x in condition]),
