@@ -15,7 +15,7 @@ from tushare.util import upass
 
 token = upass.get_token()
 tool = ts.pro.client.DataApi(token)
-engine = create_engine('postgresql://nezha:nezha@10.0.0.10:5432/stock', echo=False)
+engine = create_engine('postgresql://nezha:nezha@10.0.0.4:5432/stock', echo=False)
 
 
 def days(start_date, end_date=''):
