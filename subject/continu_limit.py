@@ -142,24 +142,6 @@ def roi2(df, raw_data, selling_price, cut_left=-24, cut_right=1, step=2):
 
 
 def process(df, expressions, st=False, next_day=1, new=False):
-    # print(len(expressions))
-    # df.sort_values('trade_date',inplace=True )
-    # print(df.iloc[0],type(df.iloc[0]))
-
-    # df=df.loc[expressions[0]]
-    # print(df)
-    # for i in range(len(expressions)):
-    #     if not expressions:continue
-    #     ds=df.iloc[i].copy()
-    #     print(ds)
-    #     # print(ds['a']==ds['b'])
-    #     ds[i]=expressions[i](ds)
-    #     # if expressions[i](ds):
-    #     #     print(ds)
-    #     #     continue
-    #     # else:
-    #     #     return
-    #     print(ds)
     ds = df.copy()
     ds.sort_values(['ts_code', 'trade_date'], inplace=True)
     for i in range(len(expressions)):
@@ -185,7 +167,7 @@ def reform_performance(res, label_name):
     performance_table[label_name] = pd.Series(res).map(FORMAT)
 
 
-def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HIGH, CLOSE, LOW],
+def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HIGH, LOW, CLOSE],
              limit_r=[UP_LIMIT, DOWN_LIMIT]):
     res = pd.DataFrame()
     if cuts_label not in df.columns:
@@ -199,8 +181,8 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HI
         df.apply(lambda x: 99 if x[OPEN] == x[UP_LIMIT] else -99 if x[OPEN] == x[DOWN_LIMIT] else x[cuts_label],
                  axis=1), [-99] + list(range(-10, 11, 2)) + [100], right=False)
 
-    for con in limit_l:
-        for con_r in limit_r:
+    for con_r in limit_r:
+        for con in limit_l:
             if ((con == vars.LOW) & (con_r == vars.UP_LIMIT)) or ((con == vars.HIGH) & (con_r == vars.DOWN_LIMIT)):
                 continue
             df['%s=%s' % (con, con_r)] = df.apply(lambda x: 1 if x[con] == x[con_r] else 0, axis=1)
@@ -208,8 +190,8 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HI
     res['total'] = df.groupby('cate')[CLOSE].count()
     for col in res.columns:
         res.loc['total', col] = res[col].sum()
-    for con in limit_l:
-        for con_r in limit_r:
+    for con_r in limit_r:
+        for con in limit_l:
             if ((con == vars.LOW) & (con_r == vars.UP_LIMIT)) or ((con == vars.HIGH) & (con_r == vars.DOWN_LIMIT)):
                 continue
             res['%s=%s:total' % (con, con_r)] = (res['%s=%s' % (con, con_r)] / res['total']).map(FORMAT)
@@ -228,8 +210,11 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HI
 def detection(ts_code, start, end):
     vector = read_data('daily', start_date=start, end_date=end)
     vector = vector.loc[vector['ts_code'] == ts_code].copy().sort_values(vars.TRADE_DATE)
-    check_list = {1: [red_line_limit, green_line_limit], 2: [red_t_limit, green_t_limit], 3: [ord_limit],
-                  4: [red_block, green_block]}
+    check_list = [[red_line_limit, red_t_limit, ord_limit], [green_line_limit, green_t_limit, green_block], n_n]
+    #
+    # for funcs in check_list:
+    #     for func in funcs:
+    # vector['func']=func.__name__ if func(vector) for func in check_list
 
 
 start_date = '20150101'
@@ -406,11 +391,52 @@ FORMAT = lambda x: '%.4f' % x
 
 # ts_code = '002151'
 # condition = [up_limit,red_line_limit, red_line_limit, red_line_limit, ord_limit]
-ts_code = '600351'
-condition = [red_line_limit,lambda x: (x[OPEN]<x[CLOSE])& (x[PCT_CHG] >= 0) & (
-                     x[PCT_CHG] < 5)
-             ]
-
+# ts_code = '600351'
+# condition = [red_line_limit,lambda x: (x[OPEN]<x[CLOSE])& (x[PCT_CHG] >= 0) & (
+#                      x[PCT_CHG] < 5)
+#              ]
+# ts_code = '002550'
+# condition = [n_n, ord_limit, red_t_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -10) & (
+#         x[PCT_CHG] < -5) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '002651'
+# condition = [n_n,up_limit,up_limit,red_line_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 6) & (
+#         x[PCT_CHG] < 10) & (x[HIGH] == x[UP_LIMIT]) &(x[CLOSE] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '600166'
+# condition = [n_n,ord_limit,ord_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -6) & (
+#         x[PCT_CHG] < -1) & (x[HIGH] != x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '002226'
+# condition = [n_n,red_line_limit,red_t_limit, lambda x: (x[OPEN] > x[CLOSE])  & (
+#         x[PCT_CHG] < -7) & (x[LOW] == x[DOWN_LIMIT])  & (x[CLOSE] != x[DOWN_LIMIT])]
+# ts_code = '300776'
+# condition = [n_n,ord_limit,red_line_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -7) & (
+#         x[PCT_CHG] < -2) & (x[HIGH] != x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '000597'
+# condition = [n_n,red_line_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 4) & (x[HIGH] != x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '002442'
+# condition = [n_n,ord_limit, lambda x: (x[OPEN] < x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 5) & (x[HIGH] == x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '603105'
+# condition = [n_n,ord_limit, lambda x: (x[OPEN] < x[CLOSE]) & (x[PCT_CHG] >= 2) & (
+#         x[PCT_CHG] < 7) & (x[HIGH] != x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '300278'
+# condition = [n_n,ord_limit,ord_limit,red_line_limit,ord_limit]
+# ts_code = '300401'
+# condition = [n_n,ord_limit, lambda x: (x[OPEN] < x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 5) & (x[HIGH] != x[UP_LIMIT])  & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '002126'
+# condition = [n_n, ord_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 5) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '002451'
+# condition = [red_line_limit,red_line_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 5) & (x[HIGH] == x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '000028'
+# condition = [n_n,
+# ord_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -4) & (
+#         x[PCT_CHG] < 0) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+ts_code = '002748'
+condition = [n_n, ord_limit, lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -9) & (
+        x[PCT_CHG] < -4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
 performance_table = pd.DataFrame()
 
 if __name__ == '__main__':
