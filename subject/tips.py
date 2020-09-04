@@ -108,7 +108,8 @@ class Stock:
         count=1
         for vars.TS_CODE in self.raw_data[vars.TS_CODE]:
             count+=1
-            if count//55==0:
+            if count%50\
+                    ==0:
                 time.sleep(60)
             self.fina_mainbz.append(pro.fina_mainbz(period='20200630',ts_code=vars.TS_CODE, type='P'))
         counter_all,counter_growth = dict(),dict()
