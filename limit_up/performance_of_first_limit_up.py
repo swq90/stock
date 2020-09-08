@@ -6,8 +6,6 @@ import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import save_data,save_to_sql
 from stock.util.basic import basic
 
-
-
 class idea1:
 
     def __init__(self, start_date=None, end_date=None, limit_type='up', days=2):
@@ -135,7 +133,7 @@ if __name__ == '__main__':
     print(t.raw_data.shape)
 
     # # 1.卖出当日股价较前日收盘的变化
-    #
+
     # t.raw_data['ma']= 10 * t.raw_data['amount'] / t.raw_data['vol']
     # t.raw_data['pct:h-l']=(t.raw_data['high']-t.raw_data['low'])
     # t.raw_data['pct:o-c']=(t.raw_data['open']-t.raw_data['close'])
