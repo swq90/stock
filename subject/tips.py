@@ -6,8 +6,8 @@ import tushare as ts
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from stock import vars
-from stock.sql.data import read_data, save_data
-
+from stock.sql.data import read_data, save_data,save_to_sql
+from stock.util.basic import basic
 pro = ts.pro_api()
 FORMAT = lambda x: '%.4f' % x
 
@@ -23,8 +23,6 @@ class Stock:
         self.start = start
         self.end = end
         self.raw_data = read_data('daily', start_date=start, end_date=end)
-        self.growth_data = None
-        self.fina_mainbz=None
 
     def stock_increse(self, n, growth=2):
         data = self.raw_data.sort_values(vars.TRADE_DATE)
@@ -104,12 +102,11 @@ class Stock:
         主营业务构成
         @return:
         '''
-        self.fina_mainbz=pd.DataFrame()
+        self.fina_mainbz=read_data('fina_mainbz',)
         count=1
         for vars.TS_CODE in self.raw_data[vars.TS_CODE]:
             count+=1
-            if count%50\
-                    ==0:
+            if count%50==0:
                 time.sleep(60)
             self.fina_mainbz.append(pro.fina_mainbz(period='20200630',ts_code=vars.TS_CODE, type='P'))
         counter_all,counter_growth = dict(),dict()
@@ -128,14 +125,22 @@ class Stock:
 # start, end = '20190701', '20202828'
 # days, growth = 270, 2
 
-start, end = '20200701', '20202828'
-days, growth = 30, 2
+start, end = '20160901', '20201231'
+days, growth = 60, 2
+
 if __name__ == '__main__':
     stock = Stock(start, end)
-    # increase = stock.stock_increse(days, growth)
+    list_days = basic().list_days(stock.raw_data, list_days=30)
+    stock.raw_data = stock.raw_data.merge(list_days, on=[vars.TS_CODE, vars.TRADE_DATE])
+    stock.stock_increse(days, growth)
+    save_data(stock.growth_data,'%s-%s-%s增长股票.csv'%(start,days,growth))
+    increase_info=stock.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()
+
+    save_to_sql(increase_info,'growth_%s_%s'%(days,growth))
+    save_data(increase_info,'%s-%s-%s增长-数量.csv'%(start,days,growth))
     # save_data(increase,'%s增长股票.csv')
     # stock.analyse_basic()
     # stock.analyse_company()
     # stock.mv()
-    stock.fina()
+    # stock.fina()
     print()
