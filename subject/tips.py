@@ -31,7 +31,7 @@ class Stock:
         data['%s-growth' % n] = data[vars.CLOSE] / data['%s-close' % n]
 
         self.growth_data = data[data['%s-growth' % n] >= growth].sort_values('%s-growth' % n, ascending=False)
-
+        return self.growth_data
     def analyse_basic(self, ):
         self.basic = read_data('stock_basic')
         self.basic = self.basic[self.basic['list_status'] == 'L']
@@ -121,23 +121,53 @@ class Stock:
         self.wc(counter_growth,'增长股票主营业务.jpg')
         print()
 
+    def increse_count(self):
+        self.stock_increse(days, growth)
+        save_data(stock.growth_data, '%s-%s-%s增长股票.csv' % (start, days, growth))
+        increase_info = self.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()
+        # save_to_sql(increase_info, 'growth_%s_%s' % (days, growth))
+        save_data(increase_info, '%s-%s-%s增长-数量.csv' % (start, days, growth))
+    def func(series,**kwargs):
+        print(series,kwargs)
+        return series[-1]/series[0]
+    def period(self,N=40):
+        data=pd.DataFrame()
+        for n in range(7,N):
+            df=self.stock_increse(n)
+            df['pre_date']=df['%s-date' % n]
+            df['days']=n
+            df=df[[vars.TS_CODE,vars.TRADE_DATE,'pre_date' ,'days']]
+            data=pd.concat([data,df],ignore_index=True)
+        save_data(data,'增长速度.csv')
+        df=data.groupby(by=[vars.TS_CODE,vars.TRADE_DATE])['pre_date'].min()
+        df=pd.DataFrame(df)
+        df['min_days']=data.groupby(by=[vars.TS_CODE,vars.TRADE_DATE])['days'].min()
+
+        df.reset_index(inplace=True)
+        save_data(df, '增长统计.csv')
+        print(data.shape)
+
+
 
 # start, end = '20190701', '20202828'
 # days, growth = 270, 2
 
-start, end = '20160901', '20201231'
-days, growth = 60, 2
+start, end = '20190101', '20201231'
+days, growth = 30, 2
 
 if __name__ == '__main__':
     stock = Stock(start, end)
+
+
     list_days = basic().list_days(stock.raw_data, list_days=30)
     stock.raw_data = stock.raw_data.merge(list_days, on=[vars.TS_CODE, vars.TRADE_DATE])
-    stock.stock_increse(days, growth)
-    save_data(stock.growth_data,'%s-%s-%s增长股票.csv'%(start,days,growth))
-    increase_info=stock.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()
-
-    save_to_sql(increase_info,'growth_%s_%s'%(days,growth))
-    save_data(increase_info,'%s-%s-%s增长-数量.csv'%(start,days,growth))
+    stock.period()
+    stock.increse_count()
+    # stock.stock_increse(days, growth)
+    # save_data(stock.growth_data,'%s-%s-%s增长股票.csv'%(start,days,growth))
+    # increase_info=stock.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()
+    # save_to_sql(increase_info,'growth_%s_%s'%(days,growth))
+    # save_data(increase_info,'%s-%s-%s增长-数量.csv'%(start,days,growth))
     # save_data(increase,'%s增长股票.csv')
     # stock.analyse_basic()
     # stock.analyse_company()
