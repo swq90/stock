@@ -1,5 +1,6 @@
 # 利用匿名函数,动态传参给filter
-
+import datetime
+import math
 import pandas as pd
 import stock.util.sheep as sheep
 import stock.limit_up.get_limit_stock as gls
@@ -80,6 +81,18 @@ def open_red(x):
 
 def open_not_limit(x):
     return (x[OPEN] != x[UP_LIMIT]) & (x[OPEN] != x[DOWN_LIMIT])
+
+def red(x):
+    return x[OPEN]<=x[CLOSE]
+def green(x):
+    return x[OPEN]>x[CLOSE]
+def sth_up_limit(x,label):
+    return x[label]==x[UP_LIMIT]
+def sth_down_limit(x,label):
+    return x[label]==x[DOWN_LIMIT]
+# def sth_all(x,pct):
+#     if pct>=0:
+#         return (x[CLOSE]>=max(0,math.floor(pct)-2))&(x[CLOSE]<)
 
 
 def performance(df, data, LIMIT=False):
@@ -207,23 +220,37 @@ def open_cut(df, cuts_label='open/pre_close=100*(open/pre_close-1)', limit_l=[HI
     return res
 
 
-def detection(ts_code, start, end):
-    vector = read_data('daily', start_date=start, end_date=end)
+def detection(ts_code, end,start=7 ):
+    start_date=(datetime.datetime.strptime(end_date, '%Y%m%d')-datetime.timedelta(start)).strftime('%Y%m%d')
+    vector = read_data('daily', start_date=start_date, end_date=end)
     vector = vector.loc[vector['ts_code'] == ts_code].copy().sort_values(vars.TRADE_DATE)
-    check_list = [[red_line_limit, red_t_limit, ord_limit], [green_line_limit, green_t_limit, green_block], n_n]
+    check_list = [ n_n,[red_line_limit, red_t_limit, ord_limit], [green_line_limit, green_t_limit, green_block]]
     #
-    # for funcs in check_list:
-    #     for func in funcs:
-    # vector['func']=func.__name__ if func(vector) for func in check_list
+    # for i in range(1,start):
+    #     for funcs in check_list:
+    #     if isinstance(funcs,list):
+    #         for func in funcs:
+    #             pass
+    #     else:
+
+
 
 
 start_date = '20150101'
 end_date = '20211201'
 FORMAT = lambda x: '%.4f' % x
 
-ts_code = '603595'
-condition = [n_n, ord_limit, red_line_limit,lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -9) & (
-        x[PCT_CHG] < -4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '603595'
+# condition = [n_n, ord_limit, red_line_limit,lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= -9) & (
+#         x[PCT_CHG] < -4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+# ts_code = '000638'
+# condition = [n_n, red_line_limit, ord_limit]
+
+ts_code = '000796'
+condition = [n_n, red_t_limit,lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+        x[PCT_CHG] < 4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+
+
 performance_table = pd.DataFrame()
 
 if __name__ == '__main__':
