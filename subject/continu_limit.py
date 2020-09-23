@@ -245,11 +245,13 @@ FORMAT = lambda x: '%.4f' % x
 #         x[PCT_CHG] < -4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
 # ts_code = '000638'
 # condition = [n_n, red_line_limit, ord_limit]
-
-ts_code = '000796'
-condition = [n_n, red_t_limit,lambda x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
-        x[PCT_CHG] < 4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
-
+#
+# ts_code = '000796'
+# condition = [n_n, red_t_limit,lamb
+# da x: (x[OPEN] > x[CLOSE]) & (x[PCT_CHG] >= 0) & (
+#         x[PCT_CHG] < 4) & (x[HIGH] != x[UP_LIMIT]) & (x[LOW] != x[DOWN_LIMIT])]
+ts_code = '600481'
+condition = [ord_limit,red_line_limit,ord_limit,ord_limit]
 
 performance_table = pd.DataFrame()
 
