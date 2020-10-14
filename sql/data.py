@@ -206,12 +206,12 @@ def save_to_sql(data, tablename, fp=None, fp_date=False, mode='w', header=True):
     # print(tablename, ' download')
 
 if __name__ == '__main__':
-    # download_data()
-    # if datetime.datetime.today().weekday() % 2 == 0:
-    #     stock_basic()
+    download_data()
+    if datetime.datetime.today().weekday() % 5 == 0:
+        stock_basic()
 
 
-    fina_mainbz()
+    # fina_mainbz()
 
 
     # new_stock(read_data('daily'))
