@@ -1,4 +1,7 @@
 # 首次出现涨停(前一日非涨停），后一日开盘与昨日收盘间关系，划区间回溯
+import sys
+sys.path.append("..")
+
 import pandas as pd
 from numpy import arange
 import stock.util.sheep as sheep

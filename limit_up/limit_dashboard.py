@@ -1,4 +1,6 @@
 # ——T涨停数量，破板率
+import sys
+sys.path.append("..")
 
 import pandas as pd
 from stock.sql.data import read_data, save_to_sql
