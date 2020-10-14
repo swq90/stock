@@ -1,16 +1,8 @@
-import os
-import sys
 import pandas as pd
-from numpy import arange
-import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
-from stock.sql.data import save_data
-from stock.util.basic import basic
-import stock.limit_up.get_limit_stock as gls
 import tushare as ts
 from stock.subject.ml_find_similiar import cos_sim
-from stock.sql.data import save_data, read_data
-from stock import vars
+from stock.sql.data import save_data
+from stock.util import vars
 
 pro = ts.pro_api()
 # START, END = '20170101', '20200401'
@@ -134,18 +126,18 @@ def index_slope(data,N,K):
 #     return [[df.iloc[0,vars.TRADE_DATE],df.iloc[-1,vars.TRADE_DATE]],cos_sim(df[vector],sample[vector])]
 def cos_cycel(data,N):
     res=[]
-    data.sort_values(vars.TRADE_DATE,inplace=True)
+    data.sort_values(vars.TRADE_DATE, inplace=True)
     for l in range(data.shape[0]-N):
         vector2=data.iloc[l:l+N,:]
 
-        res.append([vector2.iloc[0][vars.TRADE_DATE],vector2.iloc[-1][vars.TRADE_DATE],cos_sim(vector1[cols].values.reshape(1,-1),vector2[cols].values.reshape(1,-1))])
+        res.append([vector2.iloc[0][vars.TRADE_DATE], vector2.iloc[-1][vars.TRADE_DATE], cos_sim(vector1[cols].values.reshape(1, -1), vector2[cols].values.reshape(1, -1))])
     return pd.DataFrame(res,columns=['start','end','sim'])
 START, END = '20150101', '20201231'
 ts_code='000001.SH'
 # cols=[vars.OPEN,vars.CLOSE,vars.AMOUNT,vars.VOL]
-cols=[vars.AMOUNT,vars.VOL]
+cols=[vars.AMOUNT, vars.VOL]
 #
-file_name='%s_%s.csv'
+filer_name='%s_%s.csv'
 N=10
 data = get_index(ts_code, START, END)
 

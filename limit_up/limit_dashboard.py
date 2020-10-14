@@ -1,16 +1,14 @@
 # ——T涨停数量，破板率
 
 import pandas as pd
-import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
-from stock.sql.data import read_data, save_data,save_to_sql
+from stock.sql.data import read_data, save_to_sql
 from stock.util.basic import basic
-from stock import vars
+from stock.util import vars
 from stock.subject.continu_limit import process
 def red_line_limit(x):
     return x[vars.LOW] == x[vars.UP_LIMIT]
 def zhaban(x):
-    return(x[vars.HIGH] == x[vars.UP_LIMIT]) & (x[vars.CLOSE] < x[vars.UP_LIMIT])
+    return (x[vars.HIGH] == x[vars.UP_LIMIT]) & (x[vars.CLOSE] < x[vars.UP_LIMIT])
 
 def red_t_limit(x):
     return (x[vars.OPEN] == x[vars.CLOSE]) & (x[vars.OPEN] == x[vars.UP_LIMIT]) & (x[vars.LOW] < x[vars.CLOSE])
@@ -18,7 +16,7 @@ def up_limit(x):
     return x[vars.CLOSE] == x[vars.UP_LIMIT]
 
 start='20200101'
-end='20210101'
+end=''
 raw_data = read_data('daily', start_date=start, end_date=end).merge(
     read_data('stk_limit', start_date=start, end_date=end)[
         [vars.TS_CODE, vars.TRADE_DATE, vars.UP_LIMIT, vars.DOWN_LIMIT]],
@@ -35,11 +33,11 @@ def statistic(data,condition):
         res=data.loc[condition(data)]
     print(res.shape)
     return res
-def pin(data,conditons,classify=vars.TRADE_DATE):
+def pin(data, conditons, classify=vars.TRADE_DATE):
     res=pd.DataFrame()
     for con in conditions:
         res[con.__name__]=statistic(data,con).groupby(classify)[vars.TS_CODE].count()
-    print(res.describe())
+    # print(res.describe())
     return res
 
 

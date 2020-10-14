@@ -5,7 +5,7 @@ import pandas as pd
 import tushare as ts
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
-from stock import vars
+from stock.util import vars
 from stock.sql.data import read_data, save_data,save_to_sql
 from stock.util.basic import basic
 pro = ts.pro_api()
@@ -59,6 +59,7 @@ class Stock:
     def wc(self, data, name):
         # data=self.analyse_company()
         counter = {}
+
         for row in data:
             if row[0] in (
             '、', '，', '的', '；', '', '：', '和', '。', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '有', '与', '或', '及',
@@ -108,7 +109,7 @@ class Stock:
             count+=1
             if count%50==0:
                 time.sleep(60)
-            self.fina_mainbz.append(pro.fina_mainbz(period='20200630',ts_code=vars.TS_CODE, type='P'))
+            self.fina_mainbz.append(pro.fina_mainbz(period='20200630', ts_code=vars.TS_CODE, type='P'))
         counter_all,counter_growth = dict(),dict()
         for seg in self.fina_mainbz['bz_item']:
             counter_all[seg] = counter_all.get(seg, 1) + 1
@@ -121,27 +122,27 @@ class Stock:
         self.wc(counter_growth,'增长股票主营业务.jpg')
         print()
 
-    def increse_count(self):
+    def increse_count(self,days,growth):
         self.stock_increse(days, growth)
         save_data(stock.growth_data, '%s-%s-%s增长股票.csv' % (start, days, growth))
         increase_info = self.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()
-        # save_to_sql(increase_info, 'growth_%s_%s' % (days, growth))
-        save_data(increase_info, '%s-%s-%s增长-数量.csv' % (start, days, growth))
+        save_to_sql(increase_info, 'growth_%s_%s' % (days, growth))
+        save_data(increase_info, '%s--%s-%s增长-数量.csv' % (start, days, growth))
     def func(series,**kwargs):
         print(series,kwargs)
         return series[-1]/series[0]
-    def period(self,N=40):
+    def period(self,N=60):
         data=pd.DataFrame()
         for n in range(7,N):
             df=self.stock_increse(n)
             df['pre_date']=df['%s-date' % n]
             df['days']=n
-            df=df[[vars.TS_CODE,vars.TRADE_DATE,'pre_date' ,'days']]
+            df=df[[vars.TS_CODE, vars.TRADE_DATE, 'pre_date' , 'days']]
             data=pd.concat([data,df],ignore_index=True)
         save_data(data,'增长速度.csv')
-        df=data.groupby(by=[vars.TS_CODE,vars.TRADE_DATE])['pre_date'].min()
+        df=data.groupby(by=[vars.TS_CODE, vars.TRADE_DATE])['pre_date'].min()
         df=pd.DataFrame(df)
-        df['min_days']=data.groupby(by=[vars.TS_CODE,vars.TRADE_DATE])['days'].min()
+        df['min_days']=data.groupby(by=[vars.TS_CODE, vars.TRADE_DATE])['days'].min()
 
         df.reset_index(inplace=True)
         save_data(df, '增长统计.csv')
@@ -152,17 +153,17 @@ class Stock:
 # start, end = '20190701', '20202828'
 # days, growth = 270, 2
 
-start, end = '20190101', '20201231'
+start, end = '20160101', '20201231'
 days, growth = 30, 2
 
 if __name__ == '__main__':
     stock = Stock(start, end)
-
-
     list_days = basic().list_days(stock.raw_data, list_days=30)
     stock.raw_data = stock.raw_data.merge(list_days, on=[vars.TS_CODE, vars.TRADE_DATE])
-    stock.period()
-    stock.increse_count()
+    for n in [30,60]:
+        stock.increse_count(n,2)
+
+    # stock.period()
     # stock.stock_increse(days, growth)
     # save_data(stock.growth_data,'%s-%s-%s增长股票.csv'%(start,days,growth))
     # increase_info=stock.growth_data.groupby(vars.TRADE_DATE)[vars.TS_CODE].count()

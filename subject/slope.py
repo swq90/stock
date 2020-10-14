@@ -3,15 +3,8 @@
 # 最近三日的稳定器，要求最近每一日均价占三日内均价的0.985~1.015之间，
 #最后易日的均价不大于前一日均价的！%，不大于前两日均价的2%，
 # 怎么保证最近三日的open-close块保持基本一致
-import sys
-import pandas as pd
-import datetime
-from numpy import arange
-import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data, save_data
-from stock.util.basic import basic
-from stock import vars
+from stock.util import vars
 from stock.subject import continu_limit as cl
 
 FORMAT = lambda x: '%.2f' % x

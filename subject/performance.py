@@ -64,6 +64,7 @@ def func1(data, modes, day):
     # mode=[close,open,high,mean,low,pct_chg,low_open,high_open]
     for mode in modes:
         if mode in ['open', 'close', 'high', 'low']:
+            pass
 
 
         else:

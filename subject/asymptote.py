@@ -1,13 +1,5 @@
-
-import sys
-import pandas as pd
-import datetime
-from numpy import arange
-import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
-from stock.sql.data import read_data, save_data
-from stock.util.basic import basic
-import stock.vars as sv
+from stock.sql.data import read_data
+import stock.util.vars as sv
 def slope(s):
     return s.iloc[0]/s.iloc[-1] if s.iloc[-1] else -1
 def asymptote(df,N,similarity=0.8,labels=[sv.CLOSE,sv.OPEN,sv.MA]):

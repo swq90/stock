@@ -1,6 +1,6 @@
 from multiprocessing import Pool
 import os, time, random
-from settings
+
 def long_time_task(name,age):
     print('Run task %s (%s)...' % (name, os.getpid()))
     start = time.time()

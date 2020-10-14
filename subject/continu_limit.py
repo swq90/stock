@@ -1,12 +1,10 @@
 # 利用匿名函数,动态传参给filter
 import datetime
-import math
 import pandas as pd
 import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data, save_data
 from stock.util.basic import basic
-from stock import vars
+from stock.util import vars
 
 # from stock.subject import continu_list
 

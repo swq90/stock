@@ -2,6 +2,7 @@
 import os
 import sys
 import datetime
+import time
 import calendar as cal
 from dateutil.parser import parse
 from sqlalchemy import create_engine
@@ -112,7 +113,7 @@ def sfilter(self, trade_date=None, contain=True, **basic):
     return res
 
 
-def save_data(data, filename, fp=None, fp_date=False, mode='w', header=True):
+def save_data(data, filename, fp=None, fp_date=False, mode='w', header=True,encoding=None):
     if not fp:
         fp = os.path.join(os.path.dirname(os.getcwd()), 'data', os.path.basename(sys.argv[0]).split('.py')[0])
 
@@ -123,7 +124,7 @@ def save_data(data, filename, fp=None, fp_date=False, mode='w', header=True):
     if not os.path.exists(fp):
         os.makedirs(fp)
     filename = os.path.join(fp, filename)
-    data.to_csv(filename, mode=mode, header=header)
+    data.to_csv(filename, mode=mode, header=header,encoding=encoding)
 
 
 def stock_basic():
@@ -152,6 +153,15 @@ def cal(start=None, end=None, days=3):
 
 def adj_share():
     pass
+
+
+def fina_mainbz(start_date='20181231'):
+    stock_basic = pd.read_sql('stock_basic', con=engine)
+    data=pd.DataFrame()
+    for ts_code in stock_basic[stock_basic['list_status']=='L']['ts_code']:
+        data=pd.concat([tool.query('fina_mainbz',ts_code=ts_code,start_date=start_date,type='P'),data],ignore_index=True)
+        time.sleep(1)
+    data.to_sql('fina_mainbz', con=engine,if_exists='replace', index=False)
 
 
 def new_list():
@@ -196,12 +206,18 @@ def save_to_sql(data, tablename, fp=None, fp_date=False, mode='w', header=True):
     # print(tablename, ' download')
 
 if __name__ == '__main__':
-    new_stock(read_data('daily'))
+    # download_data()
+    # if datetime.datetime.today().weekday() % 2 == 0:
+    #     stock_basic()
+
+
+    fina_mainbz()
+
+
+    # new_stock(read_data('daily'))
     # new_list()
 
-    download_data()
-    if datetime.datetime.today().weekday() % 2 == 0:
-        stock_basic()
+
         # stock_basic()
 
         # # print(cal(end='20200301'),type(cal(end='20200301')))

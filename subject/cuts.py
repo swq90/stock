@@ -1,15 +1,11 @@
-import sys
 import pandas as pd
-import datetime
-from numpy import arange
 import stock.util.sheep as sheep
-import stock.limit_up.get_limit_stock as gls
 from stock.sql.data import read_data, save_data
 from stock.util.basic import basic
-from stock import vars
-from stock.subject import continu_limit as cl
+from stock.util import vars
 
-def open_cut(df, cuts_format, limit=None,bins=2,PRICEB=vars.CLOSE,PRICES=vars.CLOSE,days=1):
+
+def open_cut(df, cuts_format, limit=None, bins=2, PRICEB=vars.CLOSE, PRICES=vars.CLOSE, days=1):
     res = pd.DataFrame()
     if cuts_format not in df.columns:
 
@@ -32,7 +28,7 @@ def open_cut(df, cuts_format, limit=None,bins=2,PRICEB=vars.CLOSE,PRICES=vars.CL
         data=sheep.avg_roi(df[df['cate']==cate],df,PRICEB=PRICEB,PRICES=PRICES,days=days).reset_index()
         data['cate']=str(cate)
         # print(data.info())
-        data.set_index([vars.TRADE_DATE,'cate'],inplace=True)
+        data.set_index([vars.TRADE_DATE, 'cate'], inplace=True)
         data=data.unstack(level=0)
         res=pd.concat([res,data])
     # res['product']=[res.loc[:,'pct']].cumprod()
@@ -42,8 +38,8 @@ end_date = '20201231'
 FORMAT = lambda x: '%.3f' % x
 # cuts_format = 'open/pre_close=100*(open/pre_close-1)'
 cuts_format='pct_chg'
-limit=vars.CLOSE
-buy,sell,days,bins=vars.CLOSE,vars.OPEN,1,1
+limit= vars.CLOSE
+buy,sell,days,bins= vars.CLOSE, vars.OPEN, 1, 1
 raw_data = read_data('daily', start_date=start_date, end_date=end_date).merge(
     read_data('stk_limit', start_date=start_date, end_date=end_date)[
         ['ts_code', 'trade_date', 'up_limit', 'down_limit']],

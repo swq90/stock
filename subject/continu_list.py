@@ -1,5 +1,5 @@
 from stock.subject import continu_limit as cl
-from stock import vars
+
 # ts_code = '300209'
 # conditon = [n_n, up_limit, red_t_limit,
 #             lambda x: (x[OPEN] / x[PRE_CLOSE] >= 1.05) & (x[OPEN] != x[UP_LIMIT]) & (x[PCT_CHG] >= -5) & (

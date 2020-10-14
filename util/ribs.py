@@ -12,8 +12,17 @@ import stock.util.fuquan as fuquan
 
 
 
-ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
+# ts.set_token('006b49622d70edc237ab01340dc210db15d9580c59b40d028e34e015')
 pro = ts.pro_api()
+df = pro.query('fina_indicator', ts_code='600000.SH', start_date='20170101', end_date='20180801')
+
+
+
+
+
+
+
+
 tool = basic.basic()
 ma = [1, 5,10]
 period = 5
